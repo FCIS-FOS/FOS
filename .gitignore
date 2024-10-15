@@ -1,0 +1,13 @@
+# Build Files
+obj/
+
+# Log Files
+*.log
+logs/
+
+# VS Code settings
+.vscode/settings.json
+
+# clangd cache
+compile_commands.json
+compile_commands.events.json
