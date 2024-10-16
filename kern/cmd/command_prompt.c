@@ -509,19 +509,27 @@ int process_command(int number_of_arguments, char** arguments)
 		}
 		else // command not found
 		{
-			bool is_matched = 1;
-			for (int j = 0; j < strlen(arguments[0]); j++)
-			{
-				char* exist = strfind(commands[i].name, arguments[0][j]);
 
-				if(*exist == '\0')
+
+			int it1 = 0, it2 = 0;
+			
+			while(commands[i].name[it2] != '\0')
+			{
+				if(arguments[0][it1] == commands[i].name[it2])
 				{
-					is_matched = 0;
+					it1++;
+				}
+
+				if(arguments[0][it1] == '\0')
+				{
+					LIST_INSERT_TAIL(&foundCommands, &commands[i]);
 					break;
 				}
+
+				it2++;
 			}
 
-			if(is_matched)
+			if(arguments[0][it1] == '\0')
 			{
 				LIST_INSERT_TAIL(&foundCommands, &commands[i]);
 			}
