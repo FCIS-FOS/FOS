@@ -457,12 +457,82 @@ int process_command(int number_of_arguments, char** arguments)
 {
 	//TODO: [PROJECT'24.MS1 - #01] [1] PLAY WITH CODE! - process_command
 
+	// * Emptying the list of found commands
+	while(LIST_SIZE(&foundCommands))
+	{
+		struct Command* curr_command = LIST_FIRST(&foundCommands);
+		LIST_REMOVE(&foundCommands, curr_command);
+	}
+
 	for (int i = 0; i < NUM_OF_COMMANDS; i++)
 	{
-		if (strcmp(arguments[0], commands[i].name) == 0)
+		
+		if (strcmp(arguments[0], commands[i].name) == 0) // command found
 		{
-			return i;
+			// * We found the desired command so no need to keep the matched ones in the list
+			while(LIST_SIZE(&foundCommands))
+			{
+				struct Command* curr_command = LIST_FIRST(&foundCommands);
+				LIST_REMOVE(&foundCommands, curr_command);
+			}
+
+
+			bool flag = 0;
+
+			/*
+			Case 1: If the  found command needs at least 1 command we check if excluding the command from the arguments still gives us values.
+			Case 2: The found command has a specific number of arguments so the given arguments must be equal to it.
+			*/ 
+			if (commands[i].num_of_args == -1)
+			{
+				if ((number_of_arguments - 1) <= 0)
+				{
+					flag = 1;
+				}
+
+			}
+			else if((number_of_arguments - 1) != commands[i].num_of_args)
+			{
+				flag = 1;
+			}
+
+			if(flag) // * detected invalid number of arguments
+			{
+				LIST_INSERT_HEAD(&foundCommands, &commands[i]);
+				return CMD_INV_NUM_ARGS;
+			}
+			else // * exists and the arguments are valid
+			{
+			 return i;
+			}
+			
+		}
+		else // command not found
+		{
+			bool is_matched = 1;
+			for (int j = 0; j < strlen(arguments[0]); j++)
+			{
+				char* exist = strfind(commands[i].name, arguments[0][j]);
+
+				if(*exist == '\0')
+				{
+					is_matched = 0;
+					break;
+				}
+			}
+
+			if(is_matched)
+			{
+				LIST_INSERT_TAIL(&foundCommands, &commands[i]);
+			}
+
 		}
 	}
+
+	if(LIST_SIZE(&foundCommands))
+	{
+		return CMD_MATCHED;
+	}
+
 	return CMD_INVALID;
 }
