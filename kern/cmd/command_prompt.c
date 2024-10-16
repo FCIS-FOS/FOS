@@ -522,7 +522,7 @@ int process_command(int number_of_arguments, char** arguments)
 
 				if(arguments[0][it1] == '\0')
 				{
-					LIST_INSERT_TAIL(&foundCommands, &commands[i]);
+					//LIST_INSERT_TAIL(&foundCommands, &commands[i]);
 					break;
 				}
 
