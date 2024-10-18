@@ -103,9 +103,39 @@ void initialize_dynamic_allocator(uint32 daStart, uint32 initSizeOfAllocatedSpac
 
 	//TODO: [PROJECT'24.MS1 - #04] [3] DYNAMIC ALLOCATOR - initialize_dynamic_allocator
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("initialize_dynamic_allocator is not implemented yet");
+	// panic("initialize_dynamic_allocator is not implemented yet");
 	//Your Code is Here...
 
+	
+
+	uint32* begBlock=(uint32*)daStart;
+	*begBlock=(uint32)1;
+	uint32 check=*begBlock;
+	// cprintf("%d\t %d\n",*begBlock,check);
+	uint32* endBlock=(uint32*)(daStart+initSizeOfAllocatedSpace-sizeof(int));
+	*endBlock=1;
+
+
+	uint32* blkHeader=(uint32*)(daStart+sizeof(int));
+	*blkHeader=initSizeOfAllocatedSpace-2*sizeof(int);
+	// cprintf("%d\n",initSizeOfAllocatedSpace-2*sizeof(int));
+
+	uint32* blkFooter = (uint32*)(daStart+initSizeOfAllocatedSpace-2*sizeof(int));
+	*blkFooter=initSizeOfAllocatedSpace-2*sizeof(int);
+	
+	cprintf("begBlock: Value = %u, Address = %p\n", *begBlock, (void *)begBlock);
+    cprintf("endBlock: Value = %u, Address = %p\n", *endBlock, (void *)endBlock);
+    cprintf("blkHeader: Value = %u, Address = %p\n", *blkHeader, (void *)blkHeader);
+    cprintf("blkFooter: Value = %u, Address = %p\n", *blkFooter, (void *)blkFooter);
+
+	struct BlockElement* freeBlock=(struct BlockElement*)(daStart+2*sizeof(int));
+
+	LIST_INIT(&freeBlocksList);
+	LIST_INSERT_HEAD(&freeBlocksList,freeBlock);
+	// cprintf("%d\n",LIST_SIZE(&freeBlocksList));
+	// cprintf("%u\t %u\n",(uint32)LIST_FIRST(&freeBlocksList),daStart+2*sizeof(int));
+	cprintf("%d\n",is_free_block(freeBlock));
+	cprintf("%d\n",get_block_size(freeBlock));
 }
 //==================================
 // [2] SET BLOCK HEADER & FOOTER:
