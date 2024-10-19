@@ -868,13 +868,10 @@ void test_realloc_block_FF()
 	cprintf("*****NOTE: THIS IS A PARTIAL TEST FOR REALLOC******\n") ;
 	cprintf("You need to pick-up the missing tests and test them\n") ;
 	cprintf("===================================================\n");
-    uint32* x=(uint32*)0xF0000000;
-	uint32 y=(uint32) 50;
-    realloc_block_FF(x,y);
 	//TODO: [PROJECT'24.MS1 - #09] [3] DYNAMIC ALLOCATOR - test_realloc_block_FF()
 	//CHECK MISSING CASES AND TRY TO TEST THEM !
 
-	//panic("Test is under construction! will be announced later isA");
+	panic("Test is under construction! will be announced later isA");
 
 }
 
