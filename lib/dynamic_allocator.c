@@ -9,6 +9,7 @@
 #include "../inc/dynamic_allocator.h"
 
 
+
 //==================================================================================//
 //============================== GIVEN FUNCTIONS ===================================//
 //==================================================================================//
@@ -114,8 +115,25 @@ void set_block_data(void* va, uint32 totalSize, bool isAllocated)
 {
 	//TODO: [PROJECT'24.MS1 - #05] [3] DYNAMIC ALLOCATOR - set_block_data
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("set_block_data is not implemented yet");
+	//panic("set_block_data is not implemented yet");
 	//Your Code is Here...
+	if(totalSize>=16)
+	{
+	  if(totalSize%2!=0)
+	   totalSize+1;
+     
+	 uint32 *header=va-sizeof(int);
+	 uint32 *footer= va+totalSize-2*sizeof(int);
+	 *header=*footer=totalSize;
+    //int 2 power 0 flag , size block 
+	 if(isAllocated)
+	  {
+		*header=*header+1;
+		*footer=*footer+1;
+	  }
+	  cprintf("%u\n",get_block_size(va)); 
+	}
+  
 }
 
 
@@ -174,12 +192,45 @@ void free_block(void *va)
 //=========================================
 // [6] REALLOCATE BLOCK BY FIRST FIT:
 //=========================================
+
+
 void *realloc_block_FF(void* va, uint32 new_size)
 {
 	//TODO: [PROJECT'24.MS1 - #08] [3] DYNAMIC ALLOCATOR - realloc_block_FF
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("realloc_block_FF is not implemented yet");
 	//Your Code is Here...
+    //va=virtual address ly block w hwa awl address w msh el header
+    /*int *curheader= va-sizeof(int);
+	int blocksize=*curheader;
+    int* next_header=curheader+blocksize;
+    
+	if(*curheader > new_size)//new size smaller than current size
+	{
+        
+        
+	}
+    else if (*curheader < new_size) //new size bigger than current size
+	{
+      // int *next_header= curheader - sizeof(int);
+       if(*next_header%2==0 && *curheader + *next_header >= new_size)
+       {
+			set_block_data(va,*curheader + *next_header,1);   
+	   }
+	   else
+	   {
+
+
+	   }
+
+	}
+	else//new size equal current size
+	{
+
+
+	}*/
+	set_block_data(va,new_size,1);
+    //panic("realloc_block_FF is not implemented yet");
+	return 0;
 }
 
 /*********************************************************************************************/
