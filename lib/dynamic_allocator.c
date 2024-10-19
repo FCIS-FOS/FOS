@@ -120,18 +120,19 @@ void set_block_data(void* va, uint32 totalSize, bool isAllocated)
 	if(totalSize>=16)
 	{
 	  if(totalSize%2!=0)
-	   totalSize+1;
+	   totalSize++;
      
 	 uint32 *header=va-sizeof(int);
 	 uint32 *footer= va+totalSize-2*sizeof(int);
-	 *header=*footer=totalSize;
+	 *header=*footer=(totalSize | isAllocated);
     //int 2 power 0 flag , size block 
-	 if(isAllocated)
+	 /* if(!isAllocated)
 	  {
-		*header=*header+1;
-		*footer=*footer+1;
-	  }
-	  cprintf("%u\n",get_block_size(va)); 
+		struct BlockElement* free=(struct BlockElement *)header;
+	    LIST_INSERT_TAIL(&freeBlocksList,free);
+	  }*/
+	 cprintf("%u\n",get_block_size(va)); 
+	 // print_blocks_list(va);
 	}
   
 }
@@ -228,7 +229,7 @@ void *realloc_block_FF(void* va, uint32 new_size)
 
 
 	}*/
-	set_block_data(va,new_size,1);
+	set_block_data(va,new_size,0);
     //panic("realloc_block_FF is not implemented yet");
 	return 0;
 }
