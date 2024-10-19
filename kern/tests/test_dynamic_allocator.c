@@ -1216,26 +1216,14 @@ void test_realloc_block_FF()
 	panic("test_free_block: the kernel heap should be disabled. make sure USE_KHEAP = 0");
 	return;
 #endif
-<<<<<<< HEAD
     
-=======
-
-	//TODO: [PROJECT'24.MS1 - #09] [3] DYNAMIC ALLOCATOR - test_realloc_block_FF()
-	//CHECK MISSING CASES AND TRY TO TEST THEM !
-
->>>>>>> master
 	cprintf("===================================================\n");
 	cprintf("*****NOTE: THIS IS A PARTIAL TEST FOR REALLOC******\n") ;
 	cprintf("You need to pick-up the missing tests and test them\n") ;
 	cprintf("===================================================\n");
-<<<<<<< HEAD
-	//TODO: [PROJECT'24.MS1 - #09] [3] DYNAMIC ALLOCATOR - test_realloc_block_FF()
-	//CHECK MISSING CASES AND TRY TO TEST THEM !
-=======
 
 	int eval = 0;
 	bool is_correct;
->>>>>>> master
 
 	int initAllocatedSpace = 3*Mega;
 	initialize_dynamic_allocator(KERNEL_HEAP_START, initAllocatedSpace);
