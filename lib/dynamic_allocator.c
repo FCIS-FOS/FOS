@@ -71,7 +71,7 @@ void print_blocks_list(struct MemBlock_LIST list)
 	cprintf("\nDynAlloc Blocks List:\n");
 	LIST_FOREACH(blk, &list)
 	{
-		cprintf("(size: %d, isFree: %d)\n", get_block_size(blk), is_free_block(blk)) ;
+		cprintf("(size: %d, isFree: %d,address: %p)\n", get_block_size(blk), is_free_block(blk), blk) ;
 	}
 	cprintf("=========================================\n");
 
@@ -176,9 +176,45 @@ void *alloc_block_FF(uint32 size)
 
 	//TODO: [PROJECT'24.MS1 - #06] [3] DYNAMIC ALLOCATOR - alloc_block_FF
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("alloc_block_FF is not implemented yet");
+	// panic("alloc_block_FF is not implemented yet");
 	//Your Code is Here...
 
+	struct BlockElement* currentBlock = LIST_FIRST(&freeBlocksList);
+
+	LIST_FOREACH(currentBlock, &freeBlocksList){
+		uint32 initialBlockSize = get_block_size(currentBlock);
+
+		//current block doesn't have sufficent size
+		if(initialBlockSize<size){
+			continue;
+		}
+
+		uint32 remaining = initialBlockSize - (size + 8);
+		//current block will be split into two 
+		if(remaining >= 16){
+			set_block_data(currentBlock, size+8, 1);
+
+			struct BlockElement* splitSegment = (struct BlockElement*)((uint32)currentBlock + size + 8);
+			set_block_data(splitSegment, initialBlockSize-(size+8), 0);
+
+			struct BlockElement* prev = LIST_PREV(currentBlock);
+			LIST_REMOVE(&freeBlocksList, currentBlock);
+			if(prev == NULL){
+				LIST_INSERT_HEAD(&freeBlocksList, splitSegment);
+			}else{
+				LIST_INSERT_AFTER(&freeBlocksList, prev, splitSegment);
+			}
+			return currentBlock;
+		//internal fragmanation
+		}else if(remaining < 16 && remaining >= 0){
+			set_block_data(currentBlock, initialBlockSize, 1);
+			LIST_REMOVE(&freeBlocksList, currentBlock);
+			return currentBlock;
+		}
+	}
+	//if loop ended without hitting a return, no 
+	sbrk(size/PAGE_SIZE);
+	return NULL;
 }
 	
 // [4] ALLOCATE BLOCK BY BEST FIT:
