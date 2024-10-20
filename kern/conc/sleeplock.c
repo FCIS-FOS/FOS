@@ -44,7 +44,7 @@ void acquire_sleeplock(struct sleeplock *lk)
 	//if the door is locked go to sleep (enter the wait queue and call the sleep function)
 	while(lk->locked==Busy){
 		struct Env* threadToSleep=get_cpu_proc();
-		LIST_INSERT_TAIL(&(lk->chan.queue),threadToSleep);
+		enqueue(&(lk->chan.queue),threadToSleep);
 		//the spinLock is released in the sleep function
 		sleep(&(lk->chan),&(lk->lk));
 
