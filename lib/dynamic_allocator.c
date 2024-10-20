@@ -9,6 +9,7 @@
 #include "../inc/dynamic_allocator.h"
 
 
+
 //==================================================================================//
 //============================== GIVEN FUNCTIONS ===================================//
 //==================================================================================//
@@ -103,7 +104,9 @@ void initialize_dynamic_allocator(uint32 daStart, uint32 initSizeOfAllocatedSpac
 
 	//TODO: [PROJECT'24.MS1 - #04] [3] DYNAMIC ALLOCATOR - initialize_dynamic_allocator
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
+
 	// panic("initialize_dynamic_allocator is not implemented yet");
+
 	//Your Code is Here...
 
 	//set begin and end block
@@ -132,8 +135,19 @@ void set_block_data(void* va, uint32 totalSize, bool isAllocated)
 {
 	//TODO: [PROJECT'24.MS1 - #05] [3] DYNAMIC ALLOCATOR - set_block_data
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("set_block_data is not implemented yet");
+	//panic("set_block_data is not implemented yet");
 	//Your Code is Here...
+	if(totalSize<16)
+	 return;
+
+	if(totalSize%2!=0)
+	   totalSize++;
+
+    uint32 start=(uint32)va;
+	uint32 *header=(uint32 *)(start-sizeof(uint32));
+	uint32 *footer= (uint32 *)(start+totalSize-2*sizeof(uint32));
+	*header=*footer=(totalSize | isAllocated); 
+	
 }
 
 
@@ -166,7 +180,7 @@ void *alloc_block_FF(uint32 size)
 	//Your Code is Here...
 
 }
-//=========================================
+	
 // [4] ALLOCATE BLOCK BY BEST FIT:
 //=========================================
 void *alloc_block_BF(uint32 size)
@@ -192,12 +206,17 @@ void free_block(void *va)
 //=========================================
 // [6] REALLOCATE BLOCK BY FIRST FIT:
 //=========================================
+
+
 void *realloc_block_FF(void* va, uint32 new_size)
 {
 	//TODO: [PROJECT'24.MS1 - #08] [3] DYNAMIC ALLOCATOR - realloc_block_FF
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("realloc_block_FF is not implemented yet");
 	//Your Code is Here...
+    //va=virtual address ly block w hwa awl address w msh el header
+   
+    panic("realloc_block_FF is not implemented yet");
+	return 0;
 }
 
 /*********************************************************************************************/
