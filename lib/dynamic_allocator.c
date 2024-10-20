@@ -137,22 +137,17 @@ void set_block_data(void* va, uint32 totalSize, bool isAllocated)
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
 	//panic("set_block_data is not implemented yet");
 	//Your Code is Here...
-	if(totalSize>=16)
-	{
-	  if(totalSize%2!=0)
+	if(totalSize<16)
+	 return;
+
+	if(totalSize%2!=0)
 	   totalSize++;
-     uint32 start=(uint32)va;
-	 uint32 *header=(uint32 *)(start-sizeof(uint32));
-	 uint32 *footer= (uint32 *)(start+totalSize-2*sizeof(uint32));
-	 *header=*footer=(totalSize | isAllocated);
-	 /* if(!isAllocated)
-	  {
-		struct BlockElement* free=(struct BlockElement *)header;
-	    LIST_INSERT_TAIL(&freeBlocksList,free);
-	  }*/
-	 cprintf("%u/n",get_block_size(va));
-	}
-  
+
+    uint32 start=(uint32)va;
+	uint32 *header=(uint32 *)(start-sizeof(uint32));
+	uint32 *footer= (uint32 *)(start+totalSize-2*sizeof(uint32));
+	*header=*footer=(totalSize | isAllocated); 
+	
 }
 
 
