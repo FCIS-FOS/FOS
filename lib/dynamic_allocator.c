@@ -167,10 +167,6 @@ void *alloc_block_FF(uint32 size)
 
 	struct BlockElement* currentBlock = LIST_FIRST(&freeBlocksList);
 
-	if(size == 0){
-		return NULL;
-	}
-
 	LIST_FOREACH(currentBlock, &freeBlocksList){
 		uint32 initialBlockSize = get_block_size(currentBlock);
 
@@ -187,16 +183,17 @@ void *alloc_block_FF(uint32 size)
 			struct BlockElement* splitSegment = (struct BlockElement*)((uint32)currentBlock + size + 8);
 			set_block_data(splitSegment, initialBlockSize-(size+8), 0);
 
+			struct BlockElement* prev = LIST_PREV(currentBlock);
 			LIST_REMOVE(&freeBlocksList, currentBlock);
-			if(LIST_PREV(currentBlock) == NULL){
+			if(prev == NULL){
 				LIST_INSERT_HEAD(&freeBlocksList, splitSegment);
 			}else{
-				LIST_INSERT_AFTER(&freeBlocksList, LIST_PREV(currentBlock), splitSegment);
+				LIST_INSERT_AFTER(&freeBlocksList, prev, splitSegment);
 			}
 			return currentBlock;
 		//internal fragmanation
 		}else if(remaining < 16 && remaining >= 0){
-			set_block_data(currentBlock, size + 8, 1);
+			set_block_data(currentBlock, initialBlockSize, 1);
 			LIST_REMOVE(&freeBlocksList, currentBlock);
 			return currentBlock;
 		}
