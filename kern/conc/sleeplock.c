@@ -37,17 +37,19 @@ void acquire_sleeplock(struct sleeplock *lk)
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
 	// panic("acquire_sleeplock is not implemented yet");
 	//Your Code is Here...
-	
+
 	//place a spinLock gaurd on the sleepLock because its a critical section
 	acquire_spinlock(&(lk->lk));
 
-	//if the door is locked go to sleep (enter the wait queue and call the sleep function)
+	//if the door is locked go to sleep (call the sleep function)
 	while(lk->locked==Busy){
 		//the spinLock is released in the sleep function
 		sleep(&(lk->chan),&(lk->lk));
 	}
 	//if the door is open go in and lock it so others cant go in
 	lk->locked=Busy;
+	lk->pid=get_cpu_proc()->env_id;
+//	cprintf("%d\n",holding_sleeplock(lk));
 	release_spinlock(&(lk->lk));
 }
 
@@ -62,14 +64,19 @@ void release_sleeplock(struct sleeplock *lk)
 	acquire_spinlock(&(lk->lk));
 
 	//wake up all the processes waiting in the queue
-	if(!LIST_EMPTY(&(lk->chan.queue))){
+	if(queue_size(&(lk->chan.queue))){
 		wakeup_all(&(lk->chan));
 	}
 	//release the locks
 	lk->locked=Free;
 	release_spinlock(&(lk->lk));
-	
+
 }
+
+
+
+
+
 
 
 
