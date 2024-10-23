@@ -221,11 +221,68 @@ void *alloc_block_FF(uint32 size)
 //=========================================
 void *alloc_block_BF(uint32 size)
 {
+	{
+		if (size % 2 != 0) size++;	//ensure that the size is even (to use LSB as allocation flag)
+		if (size < DYN_ALLOC_MIN_BLOCK_SIZE)
+			size = DYN_ALLOC_MIN_BLOCK_SIZE ;
+		if (!is_initialized)
+		{
+			uint32 required_size = size + 2*sizeof(int) /*header & footer*/ + 2*sizeof(int) /*da begin & end*/ ;
+			uint32 da_start = (uint32)sbrk(ROUNDUP(required_size, PAGE_SIZE)/PAGE_SIZE);
+			uint32 da_break = (uint32)sbrk(0);
+			initialize_dynamic_allocator(da_start, da_break - da_start);
+		}
+	}
 	//TODO: [PROJECT'24.MS1 - BONUS] [3] DYNAMIC ALLOCATOR - alloc_block_BF
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("alloc_block_BF is not implemented yet");
+	// panic("alloc_block_BF is not implemented yet");
 	//Your Code is Here...
 
+	struct BlockElement* currentBlock,*bestBlock;
+	uint32 bestBlockSize=__INT_MAX__;
+	//loop over all the blocks and find the smallest one that fits the criteria 
+	LIST_FOREACH(currentBlock, &freeBlocksList){
+		uint32 currentBlockSize = get_block_size(currentBlock);
+
+		if(currentBlockSize>=size+8 && currentBlockSize<bestBlockSize){
+			bestBlockSize=currentBlockSize;
+			bestBlock=currentBlock;
+		}
+	}
+	//didn't find a block with the required size
+	if(bestBlockSize==__INT_MAX__){
+		sbrk(size/PAGE_SIZE);
+		return NULL;
+	}
+
+	uint32 remaining = bestBlockSize - (size+8);
+	//if the remaining is too big  split the block into two 
+	if(remaining >= 16){
+			set_block_data(bestBlock, size+8, 1);
+
+			struct BlockElement* splitSegment = (struct BlockElement*)((uint32)bestBlock + size + 8);
+			
+			set_block_data(splitSegment, bestBlockSize-(size+8), 0);
+
+			struct BlockElement* prev = LIST_PREV(bestBlock);
+
+			LIST_REMOVE(&freeBlocksList, bestBlock);
+
+			if(prev == NULL){
+				LIST_INSERT_HEAD(&freeBlocksList, splitSegment);
+			}else{
+				LIST_INSERT_AFTER(&freeBlocksList, prev, splitSegment);
+			}
+
+
+	}
+	//internal fragmanation
+	else if(remaining < 16 && remaining >= 0){
+		set_block_data(bestBlock, bestBlockSize, 1);
+		LIST_REMOVE(&freeBlocksList, bestBlock);
+
+	}
+	return bestBlock;
 }
 
 //===================================================
