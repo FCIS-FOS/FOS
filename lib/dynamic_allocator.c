@@ -143,7 +143,7 @@ void set_block_data(void* va, uint32 totalSize, bool isAllocated)
 	if(totalSize%2!=0)
 	   totalSize++;
 
-    uint32 start=(uint32)va;
+    uint32 start=(uint32)va; 
 	uint32 *header=(uint32 *)(start-sizeof(uint32));
 	uint32 *footer= (uint32 *)(start+totalSize-2*sizeof(uint32));
 	*header=*footer=(totalSize | isAllocated); 
@@ -250,9 +250,89 @@ void *realloc_block_FF(void* va, uint32 new_size)
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
 	//Your Code is Here...
     //va=virtual address ly block w hwa awl address w msh el header
-   
-    panic("realloc_block_FF is not implemented yet");
-	return 0;
+    // panic("realloc_block_FF is not implemented yet");
+    
+	if (va == NULL)//lw el address by null
+	{
+		if(new_size==0)
+		 return;
+		else //must be greater than 0
+		 return alloc_block_FF(new_size);
+	}
+	else //lw address msh by NULL
+	{
+	  uint32 curr_size=get_block_size(va);
+
+      if(new_size>curr_size)
+	  {
+	   uint32 start=(uint32) va;
+       uint32* next_block=(uint32*)(start+curr_size);
+       uint32 next_block_size=get_block_size(next_block);
+	   uint32 *reminder=(uint32 *)(start+new_size);
+
+	   if(is_free_block(next_block)&&next_block_size+curr_size>=new_size)//lw el block el gamb el current block fady w el total size >= new-size  
+	   {
+		if(next_block_size+curr_size-new_size>=16)//total size - new size >=16 yb2a dah block gded
+		{
+		 set_block_data(reminder,next_block_size+curr_size-new_size,0);
+         free(reminder);	
+		 set_block_data(va,new_size,1);
+		}
+        else //lw a2l mn 16 yb2a dah internal fragmentation 
+		 set_block_data(va,curr_size+next_block_size,1);
+         return va;
+	   }
+	   else //lw mfesh block gmb el current block fadya 
+	   {
+         uint32* new_block=(uint32*)alloc_block_FF(new_size);
+         
+		 if(new_block==NULL) //lw sbrk gabt a5r el heap a3ml return
+		   return;
+		
+		//lw fy mkan
+		//LOOP to transfer data from old address to new one
+		uint32 start=(uint32) va;
+		void *old_address=va;
+		void *new_address=(void*)new_block;
+		for(int i=0;i<curr_size;i++)
+		{
+			//*new_address=*old_address;
+//
+			//code
+		}
+        free(va);//free function ht8er el allocate w ta5lyh by 0
+        return (void *)new_block;
+	   }
+
+	  }
+	  else if(new_size<curr_size) // lw el block hys8r 
+	  {
+
+		uint32 start=(uint32) va;
+		uint32* next_block=(uint32*)(start+curr_size);//awl address b3d el header
+		uint32 *reminder=(uint32 *)(start+new_size);
+		if(is_free_block(next_block))//lw el gamb el current block fady
+		{
+			 set_block_data(reminder,curr_size-new_size,0);
+			 free(reminder);
+		}
+        else 
+		{
+			if(curr_size-new_size>=16)//lw el reminder akbr mn 16 y3ny block gded
+			{
+			 set_block_data(reminder,curr_size-new_size,0);
+			 free(reminder);
+			}
+			else
+			 return va;
+		}
+        set_block_data(va,new_size,1);
+	    return va;
+	  }
+	  else //cur size = new size
+	   return va;
+	}
+	return;
 }
 
 /*********************************************************************************************/
