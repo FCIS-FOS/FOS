@@ -255,7 +255,7 @@ void *realloc_block_FF(void* va, uint32 new_size)
 	if (va == NULL)//lw el address by null
 	{
 		if(new_size==0)
-		 return;
+		 return NULL;
 		else //must be greater than 0
 		 return alloc_block_FF(new_size);
 	}
@@ -275,7 +275,7 @@ void *realloc_block_FF(void* va, uint32 new_size)
 		if(next_block_size+curr_size-new_size>=16)//total size - new size >=16 yb2a dah block gded
 		{
 		 set_block_data(reminder,next_block_size+curr_size-new_size,0);
-         free(reminder);	
+         free_block(reminder);	
 		 set_block_data(va,new_size,1);
 		}
         else //lw a2l mn 16 yb2a dah internal fragmentation 
@@ -287,7 +287,7 @@ void *realloc_block_FF(void* va, uint32 new_size)
          uint32* new_block=(uint32*)alloc_block_FF(new_size);
          
 		 if(new_block==NULL) //lw sbrk gabt a5r el heap a3ml return
-		   return;
+		   return NULL;
 		
 		//lw fy mkan
 		//LOOP to transfer data from old address to new one
@@ -300,7 +300,7 @@ void *realloc_block_FF(void* va, uint32 new_size)
 //
 			//code
 		}
-        free(va);//free function ht8er el allocate w ta5lyh by 0
+        free_block(va);//free function ht8er el allocate w ta5lyh by 0
         return (void *)new_block;
 	   }
 
@@ -314,14 +314,14 @@ void *realloc_block_FF(void* va, uint32 new_size)
 		if(is_free_block(next_block))//lw el gamb el current block fady
 		{
 			 set_block_data(reminder,curr_size-new_size,0);
-			 free(reminder);
+			 free_block(reminder);
 		}
         else 
 		{
 			if(curr_size-new_size>=16)//lw el reminder akbr mn 16 y3ny block gded
 			{
 			 set_block_data(reminder,curr_size-new_size,0);
-			 free(reminder);
+			 free_block(reminder);
 			}
 			else
 			 return va;
@@ -332,7 +332,7 @@ void *realloc_block_FF(void* va, uint32 new_size)
 	  else //cur size = new size
 	   return va;
 	}
-	return;
+	return NULL; 
 }
 
 /*********************************************************************************************/
