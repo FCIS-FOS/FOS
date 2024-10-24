@@ -277,7 +277,7 @@ void free_block(void *va)
 	//getting sizes and flags
 
 	//for left
-	uint32* leftMeta = (uint32*)va - 2;
+	uint32* leftMeta = (uint32*)va - 2; //  next block  reminder 
 	//current block is first block in heap
 	if(*leftMeta == (uint32)1 || !(~(*leftMeta) & 0x1)){
 		isLeftFree = 0;
@@ -287,8 +287,8 @@ void free_block(void *va)
 		isLeftFree = (~(*leftMeta) & 0x1);
 		leftAdr = (struct BlockElement*) ((uint32)va - leftSize);
 	}
-
-	//for right
+    //16 0 15
+	//for right block 16 0->3 h 12->15 f 16 va 4 +16  20
 	uint32* rightMeta = (uint32*) ((uint32)va + get_block_size(va));
 	//current block is last block in heap
 	if(*(rightMeta-1) == (uint32)1 ||  !is_free_block(rightMeta)){
@@ -369,14 +369,18 @@ void *realloc_block_FF(void* va, uint32 new_size)
        uint32* next_block=(uint32*)(start+curr_size);
        uint32 next_block_size=get_block_size(next_block);
 	   uint32 *reminder=(uint32 *)(start+new_size);
-
-	   if(is_free_block(next_block)&&next_block_size+curr_size>=new_size)//lw el block el gamb el current block fady w el total size >= new-size  
+       uint32* rightMeta = (uint32*) ((uint32)va + get_block_size(va));
+	//current block is last block in heap
+	
+	   if(is_free_block(next_block)&&next_block_size+curr_size>=new_size&&*(rightMeta-1) != (uint32)1 )//lw el block el gamb el current block fady w el total size >= new-size  
 	   {
 		if(next_block_size+curr_size-new_size>=16)//total size - new size >=16 yb2a dah block gded
 		{
+		 //2048+20-1036=1032
 		 set_block_data(reminder,next_block_size+curr_size-new_size,0);
-         free_block(reminder);	
 		 set_block_data(va,new_size,1);
+         free_block(reminder);	
+		 
 		}
         else //lw a2l mn 16 yb2a dah internal fragmentation 
 		 set_block_data(va,curr_size+next_block_size,1);
@@ -407,7 +411,11 @@ void *realloc_block_FF(void* va, uint32 new_size)
 	  }
 	  else if(new_size<curr_size) // lw el block hys8r 
 	  {
-
+        if(new_size==0)
+		{
+		 free_block(va);
+		 return NULL;
+		}
 		uint32 start=(uint32) va;
 		uint32* next_block=(uint32*)(start+curr_size);//awl address b3d el header
 		uint32 *reminder=(uint32 *)(start+new_size);
