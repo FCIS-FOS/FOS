@@ -10,7 +10,6 @@ V 			:= @
 TOP 		:= .
 OBJDIR 		:= obj
 TOOLPREFIX 	:= /opt/cross/bin/i386-elf-
-QEMU 		:= qemu-system-i386
 PERL		:= perl
 IMAGE 		:= $(OBJDIR)/fos.img
 LOGSDIR 	:= logs
@@ -66,19 +65,14 @@ include user/Makefrag
 
 
 # Emulators
+bochs: all
+	$(V) bochs -q -f ./bochsConfigs/bochsrc.txt
 
-QEMUEXTRAS	= -chardev stdio,id=char0,mux=on,logfile=$(LOGSDIR)/$(LOGFILE).log,logappend=on -parallel chardev:char0
-QEMUOPTS 	= -drive file=$(IMAGE),media=disk,format=raw -smp 1 -m 256 $(QEMUEXTRAS)
-
-qemu: all
-	$(V)$(QEMU) $(QEMUOPTS)
-
-qemu-gdb: all
-	$(QEMU) $(QEMUOPTS) -S -s
+bochs-gdb: all
+	$(V) bochs -q -f ./bochsConfigs/bochsrc-gdb.txt
 
 
 # For deleting the build
-
 clean:
 	rm -rf $(OBJDIR)
 

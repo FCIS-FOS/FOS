@@ -5,7 +5,7 @@
       "label": "build",
       "detail": "Compile and Run FOS",
       "type": "shell",
-      "command": "make qemu",
+      "command": "make bochs",
       "problemMatcher": {
         "owner": "cpp",
         "fileLocation": [
@@ -31,7 +31,7 @@
       "label": "build-debug",
       "detail": "Compile and Run FOS in debug mode",
       "type": "shell",
-      "command": "make qemu-gdb",
+      "command": "make bochs-gdb",
       "isBackground": true,
       "problemMatcher": {
         "owner": "cpp",
