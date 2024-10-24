@@ -226,6 +226,9 @@ void *alloc_block_BF(uint32 size)
 	panic("alloc_block_BF is not implemented yet");
 	//Your Code is Here...
 
+
+
+
 }
 
 //===================================================
@@ -235,8 +238,105 @@ void free_block(void *va)
 {
 	//TODO: [PROJECT'24.MS1 - #07] [3] DYNAMIC ALLOCATOR - free_block
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("free_block is not implemented yet");
+	//panic("free_block is not implemented yet");
 	//Your Code is Here...
+
+	/*
+		if va == null -> return
+
+		1- save left and right sizes + set left, right, current flags(free status)
+			1.1 check if block is last(1) and or first(2)
+				1.1.1 increment to current + current size (will be at right meta data)	
+					  if size of meta data == 0 then current is last + rightFlag = 0
+					  else normal block so get size and status
+
+				1.1.2 get footer of previous data 
+					  if: footer size == 0 then this footer is start block + leftFlag = 0
+					  else: normal block so get size
+
+		3- according to flags --> set block data, set anchor pointer (first ptr in coalced memory)
+		4- edit linked list
+		(to get prev)4.2- for each block --> save ptr if less than anchor , if > than anchor brak
+			4.3 if prev null -> LIST_INSERT_HEAD else LIST_INSERT_AFTER prev
+	*/
+	//invalid address
+	if(va == NULL){
+		return;
+	}
+
+	bool isLeftFree;
+	bool isRightFree;
+
+	struct BlockElement* leftAdr;
+	struct BlockElement* rightAdr;
+
+	uint32 currentSize = get_block_size(va);
+	uint32 rightSize;
+	uint32 leftSize;
+
+	//getting sizes and flags
+
+	//for left
+	uint32* leftMeta = (uint32*)va - 2;
+	//current block is first block in heap
+	if(*leftMeta == (uint32)1 || !(~(*leftMeta) & 0x1)){
+		isLeftFree = 0;
+		leftSize = 0;
+	}else{//left block is an actual block
+		leftSize = *leftMeta & (UINT_MAX-1);
+		isLeftFree = (~(*leftMeta) & 0x1);
+		leftAdr = (struct BlockElement*) ((uint32)va - leftSize);
+	}
+
+	//for right
+	uint32* rightMeta = (uint32*) ((uint32)va + get_block_size(va));
+	//current block is last block in heap
+	if(*(rightMeta-1) == (uint32)1 ||  !is_free_block(rightMeta)){
+		isRightFree = 0;
+		rightSize = 0;
+	}else{//right block is an actual block
+		rightSize = get_block_size(rightMeta);
+		isRightFree = is_free_block(rightMeta);
+		rightAdr = (struct BlockElement*) rightMeta;
+	}
+
+	//set anchor and block data
+	struct BlockElement* anchorBlock;
+	if(isLeftFree && isRightFree){
+		anchorBlock = leftAdr;
+		LIST_REMOVE(&freeBlocksList, rightAdr);
+		LIST_REMOVE(&freeBlocksList, leftAdr);
+
+	}else if(isLeftFree){
+		anchorBlock = leftAdr;
+		LIST_REMOVE(&freeBlocksList, leftAdr);
+
+	}else if(isRightFree){
+		anchorBlock = (struct BlockElement*)va;
+		LIST_REMOVE(&freeBlocksList, rightAdr);
+	}else{
+		anchorBlock = (struct BlockElement*)va;
+	}
+
+	//coalecing required block
+	set_block_data(anchorBlock, currentSize+rightSize+leftSize, 0);
+
+	//linked list manipulation
+	struct BlockElement* prev = NULL;
+	struct BlockElement*  currentBlock = NULL;
+
+	LIST_FOREACH(currentBlock, &freeBlocksList){
+		if((uint32)currentBlock > (uint32)anchorBlock){
+			break;
+		}
+		prev = currentBlock;
+	}
+
+	if(prev == NULL){
+		LIST_INSERT_HEAD(&freeBlocksList, anchorBlock);
+	}else{
+		LIST_INSERT_AFTER(&freeBlocksList, prev,anchorBlock);
+	}
 }
 
 //=========================================
