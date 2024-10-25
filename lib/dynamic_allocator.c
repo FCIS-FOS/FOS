@@ -444,7 +444,7 @@ void *realloc_block_FF(void* va, uint32 new_size)
 			set_block_data(va,new_size,1);
 			 set_block_data(reminder,curr_size-new_size,0);
 			 free_block(reminder);
-			 //return va;
+			 
 		}
         else 
 		{
@@ -454,17 +454,17 @@ void *realloc_block_FF(void* va, uint32 new_size)
 			 set_block_data(va,new_size,1);
 			 set_block_data(reminder,curr_size-new_size,0);
 			 free_block(reminder);
-			// return va;
+			
 			}
 			//If the remaining size is less than 16, then no action is required.
-			// return va;
+			
 		}
 		return va;
 	  }
 	  else //cur size == new size
 	   return va;
 	}
-	//return NULL; 
+	
 }
 
 /*********************************************************************************************/
