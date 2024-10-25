@@ -347,36 +347,42 @@ void free_block(void *va)
 void *realloc_block_FF(void* va, uint32 new_size)
 {
 	//TODO: [PROJECT'24.MS1 - #08] [3] DYNAMIC ALLOCATOR - realloc_block_FF
-	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	//Your Code is Here...
-    //va=virtual address ly block w hwa awl address w msh el header
-    // panic("realloc_block_FF is not implemented yet");
-    new_size+=8;
-	if (va == NULL)//lw el address by null
+    //va=The virtual address of the memory block positioned directly after the header
+
+
+    new_size+=8;//Each block must include an additional 4 bytes for the header and 4 bytes for the footer
+
+	if (va == NULL)//In case the address is null.
 	{
 		if(new_size==8)
 		 return NULL;
 		else //must be greater than 0
 		 return alloc_block_FF(new_size-8);
 	}
-	else //lw address msh by NULL
+	else //In case the address is not null.
 	{
 	  uint32 curr_size=get_block_size(va);
-
+		//If the block size needs to be allocated larger than the current size.
       if(new_size>curr_size)
 	  {
 	   uint32 start=(uint32) va;
+
        uint32* next_block=(uint32*)(start+curr_size);
        uint32 next_block_size=get_block_size(next_block);
+
 	   uint32 *reminder=(uint32 *)(start+new_size);
+
        uint32* rightMeta = (uint32*) ((uint32)va + get_block_size(va));
-	//current block is last block in heap
-	
-	   if(is_free_block(next_block)&&next_block_size+curr_size>=new_size&&*(rightMeta-1) != (uint32)1 )//lw el block el gamb el current block fady w el total size >= new-size  
+		
+		//If the next block after the current one is free, and the total size of both blocks is greater than or equal to the new size.
+		//and the current block is not the last block in the heap.	   
+	   if(is_free_block(next_block)&&next_block_size+curr_size>=new_size&&*(rightMeta-1) != (uint32)1 )  
 	   {
-		if(next_block_size+curr_size-new_size>=16)//total size - new size >=16 yb2a dah block gded
+
+		//If the remaining space in the next block is 16 or greater, it can be allocated as a separate free block.
+		if(next_block_size+curr_size-new_size>=16)
 		{
-		 //2048+20-1036=1032
+		
 		struct BlockElement *next_address;
 		 next_address = (struct BlockElement*) next_block;
 		 LIST_REMOVE(&freeBlocksList,next_address);
@@ -386,7 +392,7 @@ void *realloc_block_FF(void* va, uint32 new_size)
 
 		 
 		}
-        else //lw a2l mn 16 yb2a dah internal fragmentation 
+        else //If the remaining space in the next block is less than 16, so the entire next block must be allocated completely.
 		{
 			 struct BlockElement *next_address;
 		 next_address = (struct BlockElement*) next_block;
@@ -396,13 +402,14 @@ void *realloc_block_FF(void* va, uint32 new_size)
 		}
          return va;
 	   }
-	   else //lw mfesh block gmb el current block fadya 
+	   else //If the next block is not free, the current block must be reallocated to a new address.
 	   {
          uint32* new_block=(uint32*)alloc_block_FF(new_size-8);
-		 if(new_block==NULL) //lw sbrk gabt a5r el heap a3ml return
-		   return NULL;
+
+		//If no free block has a size greater than or equal to the new size, or if there are no free blocks available.
+		 if(new_block==NULL) return NULL;
 		
-		//lw fy mkan
+		
 		//LOOP to transfer data from old address to new one
 		uint32 start=(uint32) va;
 		void *old_address=va;
@@ -412,12 +419,15 @@ void *realloc_block_FF(void* va, uint32 new_size)
 			//*new_address=*old_address;
 			//code
 		}
-        free_block(va);//free function ht8er el allocate w ta5lyh by 0
-        return (void *)new_block;
+
+		//If the current block is reallocated to a new address,the original address must be marked as a free block.
+        free_block(va);
+	  	return (void *)new_block;
 	   }
 
 	  }
-	  else if(new_size<curr_size) // lw el block hys8r 
+	  //If the block does not need the current size, the remaining size must be marked as a free block.
+	  else if(new_size<curr_size)  
 	  {
         if(new_size==8)
 		{
@@ -425,32 +435,36 @@ void *realloc_block_FF(void* va, uint32 new_size)
 		 return NULL;
 		}
 		uint32 start=(uint32) va;
-		uint32* next_block=(uint32*)(start+curr_size);//awl address b3d el header
+		uint32* next_block=(uint32*)(start+curr_size);
 		uint32 *reminder=(uint32 *)(start+new_size);
-		if(is_free_block(next_block))//lw el gamb el current block fady
+
+		//If the next block is free, the size of the remaining space in the current block is irrelevant, as it will be merged with the next block.
+		if(is_free_block(next_block))
 		{
 			set_block_data(va,new_size,1);
 			 set_block_data(reminder,curr_size-new_size,0);
 			 free_block(reminder);
+			 //return va;
 		}
         else 
 		{
-			if(curr_size-new_size>=16)//lw el reminder akbr mn 16 y3ny block gded
+			//If the remaining space in the next block is 16 or greater, it also can be allocated as a separate free block.
+			if(curr_size-new_size>=16)
 			{
 			 set_block_data(va,new_size,1);
 			 set_block_data(reminder,curr_size-new_size,0);
 			 free_block(reminder);
+			// return va;
 			}
-			else
-			 return va;
+			//If the remaining size is less than 16, then no action is required.
+			// return va;
 		}
-        
-	    return va;
+		return va;
 	  }
-	  else //cur size = new size
+	  else //cur size == new size
 	   return va;
 	}
-	return NULL; 
+	//return NULL; 
 }
 
 /*********************************************************************************************/
