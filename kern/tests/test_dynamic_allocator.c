@@ -26,7 +26,7 @@ uint32 allocSizes[numOfAllocs] = {4*kilo, 20*sizeof(char) + sizeOfMetaData, 1*ki
 short* startVAs[numOfAllocs*allocCntPerSize+1] ;
 short* midVAs[numOfAllocs*allocCntPerSize+1] ;
 short* endVAs[numOfAllocs*allocCntPerSize+1] ;
-
+void test_realloc_block_FF_COMPLETE();
 int check_block(void* va, void* expectedVA, uint32 expectedSize, uint8 expectedFlag)
 {
 	//Check returned va
@@ -1235,7 +1235,7 @@ void test_realloc_block_FF()
 	/* Try to allocate set of blocks with different sizes*/
 	cprintf("1: Test calling realloc with VA = NULL.[10%]\n\n") ;
 	is_correct = 1;
-
+	
 	int totalSizes = 0;
 	for (int i = 0; i < numOfAllocs; ++i)
 	{
@@ -1498,7 +1498,7 @@ void test_realloc_block_FF()
 	}
 
 	cprintf("[PARTIAL] test realloc_block with FIRST FIT completed. Evaluation = %d%\n", eval);
-
+	test_realloc_block_FF_COMPLETE();
 }
 
 
@@ -1509,8 +1509,94 @@ void test_realloc_block_FF_COMPLETE()
 	return;
 #endif
 
-	panic("this is UNSEEN test");
+	// panic("this is UNSEEN test");
+	bool is_correct;
+	int eval=0;
+	int initAllocatedSpace = 3*Mega;
+	initialize_dynamic_allocator(KERNEL_HEAP_START, initAllocatedSpace);
+	cprintf("first test: when you want to expand but the next block is full\n");
+	void * va, *expectedVA ;
+	void * firstBlock=alloc_block(200,DA_FF);
+	int* startFirstBlockVA=(int*)firstBlock;
+	*startFirstBlockVA=12;
+	startFirstBlockVA++;
+	*startFirstBlockVA=14;
+	void * secondBlock=alloc_block(200,DA_FF);
+	void * thirdBlock=alloc_block(200,DA_FF);
+	expectedVA=thirdBlock+get_block_size(thirdBlock);
+	va=realloc_block_FF(firstBlock,300);
+	startFirstBlockVA=(int*)va;
+	is_correct=check_block(va,expectedVA,300+8,1) && *startFirstBlockVA==12 && *(startFirstBlockVA+1)==14;
+	if(is_correct){
+		cprintf("you passed the first test \n");
+		eval++;
+	}
+	else{
+		cprintf("you failed the first test \n");
+	}
+	cprintf("second test: you want to expand, next block is free but not enough space\n");
+	initialize_dynamic_allocator(KERNEL_HEAP_START, initAllocatedSpace);
+	firstBlock=alloc_block(200,DA_FF);
+	startFirstBlockVA=(int*)firstBlock;
+	*startFirstBlockVA=12;
+	startFirstBlockVA++;
+	*startFirstBlockVA=14;
+	secondBlock=alloc_block(200,DA_FF);
+	thirdBlock=alloc_block(200,DA_FF);
+	free_block(secondBlock);
+	va = realloc_block_FF(firstBlock,600);
 
+	startFirstBlockVA=(int*)va;
+	is_correct=check_block(va,expectedVA,600+8,1) && *startFirstBlockVA==12 && *(startFirstBlockVA+1)==14;
+	if(is_correct){
+		cprintf("you passed the second test \n");
+		eval++;
+	}
+	else{
+		cprintf("you failed the second test \n");
+	}
+	cprintf("third test: expand but this is the last block\n");
+	initialize_dynamic_allocator(KERNEL_HEAP_START, initAllocatedSpace);
+	firstBlock=alloc_block(2*Mega-8,DA_FF);
+
+	secondBlock=alloc_block(Mega-8,DA_FF);
+	startFirstBlockVA=(int*)secondBlock;
+	*startFirstBlockVA=12;
+	startFirstBlockVA++;
+	*startFirstBlockVA=14;
+	free_block(firstBlock);
+	va = realloc_block_FF(secondBlock,2*Mega-200);
+	expectedVA=firstBlock;
+	startFirstBlockVA=(int*)va;
+	is_correct=check_block(va,expectedVA,2*Mega-200+8,1) && *startFirstBlockVA==12 && *(startFirstBlockVA+1)==14;
+	if(is_correct){
+		cprintf("you passed the third test \n");
+		eval++;
+	}
+	else{
+		cprintf("you failed the third test \n");
+	}
+	cprintf("test four: call function with null and size of zero\n");
+	if(realloc_block_FF(NULL,0)==NULL){
+		cprintf("you passed the fourth test \n");
+		eval++;
+	}
+	else{
+		cprintf("you failed the fourth test \n");
+	}
+	cprintf("test five: call function with the same block size\n");
+	expectedVA=va;
+	va=realloc_block_FF(va,2*Mega-200);
+	is_correct=check_block(va,expectedVA,2*Mega-200+8,1) && *startFirstBlockVA==12 && *(startFirstBlockVA+1)==14;
+	if(is_correct){
+		cprintf("you passed the fifth test \n");
+		eval++;
+	}
+	else{
+		cprintf("you failed the fifth test \n");
+	}
+	// float accuracy=(eval/5)*100;
+	// cprintf("you score is %f\n",accuracy);
 }
 
 

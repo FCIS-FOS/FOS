@@ -415,9 +415,7 @@ void *realloc_block_FF(void* va, uint32 new_size)
 		uint32 start=(uint32) va;
 		void *old_address=va;
 		void *new_address=(void*)new_block;
-		struct BlockElement* curr_block_data=(struct BlockElement*)va;
-		struct BlockElement* new_block_data=(struct BlockElement*)new_address;
-		*new_block_data=*curr_block_data;
+		memcpy(new_address,va,curr_size-8);
 		
 
 
