@@ -351,7 +351,8 @@ void *realloc_block_FF(void* va, uint32 new_size)
 
 
     new_size+=8;//Each block must include an additional 4 bytes for the header and 4 bytes for the footer
-
+	if (new_size%2!=0)new_size+=1;
+	if (new_size<16&&new_size!=8)new_size=16;
 	if (va == NULL)//In case the address is null.
 	{
 		if(new_size==8)
@@ -410,15 +411,15 @@ void *realloc_block_FF(void* va, uint32 new_size)
 		 if(new_block==NULL) return NULL;
 		
 		
-		//LOOP to transfer data from old address to new one
+		//transfer data from old address to new one
 		uint32 start=(uint32) va;
 		void *old_address=va;
 		void *new_address=(void*)new_block;
-		for(int i=0;i<curr_size;i++)
-		{
-			//*new_address=*old_address;
-			//code
-		}
+		struct BlockElement* curr_block_data=(struct BlockElement*)va;
+		struct BlockElement* new_block_data=(struct BlockElement*)new_address;
+		*new_block_data=*curr_block_data;
+		
+
 
 		//If the current block is reallocated to a new address,the original address must be marked as a free block.
         free_block(va);
@@ -435,30 +436,20 @@ void *realloc_block_FF(void* va, uint32 new_size)
 		 return NULL;
 		}
 		uint32 start=(uint32) va;
-		uint32* next_block=(uint32*)(start+curr_size);
+		// uint32* next_block=(uint32*)(start+curr_size);
 		uint32 *reminder=(uint32 *)(start+new_size);
 
-		//If the next block is free, the size of the remaining space in the current block is irrelevant, as it will be merged with the next block.
-		if(is_free_block(next_block))
-		{
-			set_block_data(va,new_size,1);
-			 set_block_data(reminder,curr_size-new_size,0);
-			 free_block(reminder);
-			 
-		}
-        else 
-		{
 			//If the remaining space in the next block is 16 or greater, it also can be allocated as a separate free block.
 			if(curr_size-new_size>=16)
 			{
 			 set_block_data(va,new_size,1);
-			 set_block_data(reminder,curr_size-new_size,0);
+			 set_block_data(reminder,curr_size-new_size,1);/////////////////////////
 			 free_block(reminder);
 			
 			}
 			//If the remaining size is less than 16, then no action is required.
 			
-		}
+		
 		return va;
 	  }
 	  else //cur size == new size
