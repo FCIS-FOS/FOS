@@ -30,7 +30,7 @@ _main(void)
 	int cnt = 0;
 	while (numOfBlockedProcesses != numOfSlaves)
 	{
-		env_sleep(1000);
+		env_sleep(10000);
 		cnt++ ;
 		if (cnt == numOfSlaves)
 		{
@@ -48,7 +48,7 @@ _main(void)
 	cnt = 0;
 	while (gettst() != numOfSlaves)
 	{
-		env_sleep(1000);
+		env_sleep(10000);
 		cnt++ ;
 		if (cnt == numOfSlaves)
 		{
