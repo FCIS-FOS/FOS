@@ -406,7 +406,39 @@ void *realloc_block_FF(void* va, uint32 new_size)
 {
 	//TODO: [PROJECT'24.MS1 - #08] [3] DYNAMIC ALLOCATOR - realloc_block_FF
     //va=The virtual address of the memory block positioned directly after the header
+   /*
+   
+    if current address == null
+		check if required size == 8 return --> null     realloc(null,0)
+        	else return --> alloc(required size)        realloc(null,size)
+   
+ 	1- if required size > current size
+		store first address of current block after header and first address of next block after header and its size
 
+	 	1.1 if next block free and total size >= required size && next block is free
+
+            1.1.1 if total size - required size >= 16
+		   		remove block from list then split the block to new block and reminder then add remaining part to free to list
+            1.1.2 if total size - required size < 16 internal fragmentation
+				remove block from list and set new header and footer
+	      	return current address
+
+  		1.2 else
+	     	use allocate to find new block 
+            1.2.1 if allocate didn't find new block --> return null
+              	transfer data to new block then add free block to the list 
+            return new address
+
+        2- if required size < current size
+		2.1  if required size == 8 
+			add block to free list return --> null
+        	2.2 if current size - required size >= 16
+			split the block to new block and reminder then add remaining part to free list
+            return current address        
+    
+	3- if required size == current size
+		return current address
+*/ 
 
     new_size+=8;//Each block must include an additional 4 bytes for the header and 4 bytes for the footer
 	if (new_size%2!=0)new_size+=1;
