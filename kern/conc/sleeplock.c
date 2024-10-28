@@ -29,24 +29,60 @@ int holding_sleeplock(struct sleeplock *lk)
 	return r;
 }
 //==========================================================================
+#define Busy 1
+#define Free 0
 
+// Acquires the sleeplock, making the current process sleep if the lock is already held
 void acquire_sleeplock(struct sleeplock *lk)
 {
 	//TODO: [PROJECT'24.MS1 - #13] [4] LOCKS - acquire_sleeplock
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("acquire_sleeplock is not implemented yet");
+	// panic("acquire_sleeplock is not implemented yet");
 	//Your Code is Here...
 
+    // Protect the critical section with a spinlock
+    acquire_spinlock(&(lk->lk));
+
+    // If the sleeplock is already locked, put the current process to sleep
+    while (lk->locked == Busy)
+    {
+        sleep(&(lk->chan), &(lk->lk));  // Release spinlock and make the process sleep
+    }
+
+    // Once the lock is free, acquire it for the current process
+    lk->locked = Busy;
+    lk->pid = get_cpu_proc()->env_id;  // Set the current process as the owner of the lock
+
+    release_spinlock(&(lk->lk));  // Release the spinlock
 }
 
+// Releases the sleeplock and wakes up any processes that are waiting on it
 void release_sleeplock(struct sleeplock *lk)
 {
 	//TODO: [PROJECT'24.MS1 - #14] [4] LOCKS - release_sleeplock
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("release_sleeplock is not implemented yet");
+	// panic("release_sleeplock is not implemented yet");
 	//Your Code is Here...
+	
+    // Protect the critical section with a spinlock
+    acquire_spinlock(&(lk->lk));
 
+    // Wake up all processes waiting on the sleeplock's channel
+    if (queue_size(&(lk->chan.queue)))
+    {
+        wakeup_all(&(lk->chan));  // Wake up all processes sleeping on the channel
+    }
+
+    // Free the lock and reset its state
+    lk->locked = Free;
+
+    release_spinlock(&(lk->lk));  // Release the spinlock
 }
+
+
+
+
+
 
 
 
