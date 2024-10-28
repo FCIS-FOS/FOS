@@ -143,7 +143,7 @@ void set_block_data(void* va, uint32 totalSize, bool isAllocated)
 	if(totalSize%2!=0)
 	   totalSize++;
 
-    uint32 start=(uint32)va;
+    uint32 start=(uint32)va; 
 	uint32 *header=(uint32 *)(start-sizeof(uint32));
 	uint32 *footer= (uint32 *)(start+totalSize-2*sizeof(uint32));
 	*header=*footer=(totalSize | isAllocated); 
@@ -237,6 +237,7 @@ void *alloc_block_BF(uint32 size)
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
 	// panic("alloc_block_BF is not implemented yet");
 	//Your Code is Here...
+
 
 	struct BlockElement* currentBlock,*bestBlock;
 	uint32 bestBlockSize=__INT_MAX__;
@@ -333,6 +334,7 @@ void free_block(void *va)
 
 	//for left
 	uint32* leftMeta = (uint32*)va - 2;
+  
 	//current block is first block in heap
 	if(*leftMeta == (uint32)1 || !(~(*leftMeta) & 0x1)){
 		isLeftFree = 0;
@@ -342,6 +344,7 @@ void free_block(void *va)
 		isLeftFree = (~(*leftMeta) & 0x1);
 		leftAdr = (struct BlockElement*) ((uint32)va - leftSize);
 	}
+
 
 	//for right
 	uint32* rightMeta = (uint32*) ((uint32)va + get_block_size(va));
@@ -402,12 +405,145 @@ void free_block(void *va)
 void *realloc_block_FF(void* va, uint32 new_size)
 {
 	//TODO: [PROJECT'24.MS1 - #08] [3] DYNAMIC ALLOCATOR - realloc_block_FF
-	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	//Your Code is Here...
-    //va=virtual address ly block w hwa awl address w msh el header
+    //va=The virtual address of the memory block positioned directly after the header
+   /*
    
-    panic("realloc_block_FF is not implemented yet");
-	return 0;
+    if current address == null
+		check if required size == 8 return --> null     realloc(null,0)
+        	else return --> alloc(required size)        realloc(null,size)
+   
+ 	1- if required size > current size
+		store first address of current block after header and first address of next block after header and its size
+
+	 	1.1 if next block free and total size >= required size && next block is free
+
+            1.1.1 if total size - required size >= 16
+		   		remove block from list then split the block to new block and reminder then add remaining part to free to list
+            1.1.2 if total size - required size < 16 internal fragmentation
+				remove block from list and set new header and footer
+	      	return current address
+
+  		1.2 else
+	     	use allocate to find new block 
+            1.2.1 if allocate didn't find new block --> return null
+              	transfer data to new block then add free block to the list 
+            return new address
+
+        2- if required size < current size
+		2.1  if required size == 8 
+			add block to free list return --> null
+        	2.2 if current size - required size >= 16
+			split the block to new block and reminder then add remaining part to free list
+            return current address        
+    
+	3- if required size == current size
+		return current address
+*/ 
+
+    new_size+=8;//Each block must include an additional 4 bytes for the header and 4 bytes for the footer
+	if (new_size%2!=0)new_size+=1;
+	if (new_size<16&&new_size!=8)new_size=16;
+	if (va == NULL)//In case the address is null.
+	{
+		if(new_size==8)
+		 return NULL;
+		else //must be greater than 0
+		 return alloc_block_FF(new_size-8);
+	}
+	else //In case the address is not null.
+	{
+	  uint32 curr_size=get_block_size(va);
+		//If the block size needs to be allocated larger than the current size.
+      if(new_size>curr_size)
+	  {
+	   uint32 start=(uint32) va;
+
+       uint32* next_block=(uint32*)(start+curr_size);
+       uint32 next_block_size=get_block_size(next_block);
+
+	   uint32 *reminder=(uint32 *)(start+new_size);
+
+       uint32* rightMeta = (uint32*) ((uint32)va + get_block_size(va));
+		
+		//If the next block after the current one is free, and the total size of both blocks is greater than or equal to the new size.
+		//and the current block is not the last block in the heap.	   
+	   if(is_free_block(next_block)&&next_block_size+curr_size>=new_size&&*(rightMeta-1) != (uint32)1 )  
+	   {
+
+		//If the remaining space in the next block is 16 or greater, it can be allocated as a separate free block.
+		if(next_block_size+curr_size-new_size>=16)
+		{
+		
+		struct BlockElement *next_address;
+		 next_address = (struct BlockElement*) next_block;
+		 LIST_REMOVE(&freeBlocksList,next_address);
+		 set_block_data(reminder,next_block_size+curr_size-new_size,0);
+		 set_block_data(va,new_size,1);
+         free_block(reminder);	
+
+		 
+		}
+        else //If the remaining space in the next block is less than 16, so the entire next block must be allocated completely.
+		{
+			 struct BlockElement *next_address;
+		 next_address = (struct BlockElement*) next_block;
+		 LIST_REMOVE(&freeBlocksList,next_address);
+		 set_block_data(va,curr_size+next_block_size,1);
+		
+		}
+         return va;
+	   }
+	   else //If the next block is not free, the current block must be reallocated to a new address.
+	   {
+         uint32* new_block=(uint32*)alloc_block_FF(new_size-8);
+
+		//If no free block has a size greater than or equal to the new size, or if there are no free blocks available.
+		 if(new_block==NULL) return NULL;
+		
+		
+		//transfer data from old address to new one
+		uint32 start=(uint32) va;
+		void *old_address=va;
+		void *new_address=(void*)new_block;
+		memcpy(new_address,va,curr_size-8);
+		
+
+
+		//If the current block is reallocated to a new address,the original address must be marked as a free block.
+        free_block(va);
+	  	return (void *)new_block;
+	   }
+
+	  }
+	  //If the block does not need the current size, the remaining size must be marked as a free block.
+	  else if(new_size<curr_size)  
+	  {
+        if(new_size==8)
+		{
+		 free_block(va);
+		 return NULL;
+		}
+		uint32 start=(uint32) va;
+		// uint32* next_block=(uint32*)(start+curr_size);
+		uint32 *reminder=(uint32 *)(start+new_size);
+
+			//If the remaining space in the next block is 16 or greater, it also can be allocated as a separate free block.
+			if(curr_size-new_size>=16)
+			{
+			 set_block_data(va,new_size,1);
+			 set_block_data(reminder,curr_size-new_size,1);/////////////////////////
+			 free_block(reminder);
+			
+			}
+			//If the remaining size is less than 16, then no action is required.
+			
+		
+		return va;
+	  }
+	  else //cur size == new size
+	   return va;
+	}
+	
 }
 
 /*********************************************************************************************/
