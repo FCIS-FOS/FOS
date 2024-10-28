@@ -1559,7 +1559,7 @@ void test_realloc_block_FF_COMPLETE()
 	initialize_dynamic_allocator(KERNEL_HEAP_START, initAllocatedSpace);
 	firstBlock=alloc_block(2*Mega-8,DA_FF);
 
-	secondBlock=alloc_block(Mega-8,DA_FF);
+	secondBlock=alloc_block(Mega-16,DA_FF);
 	startFirstBlockVA=(int*)secondBlock;
 	*startFirstBlockVA=12;
 	startFirstBlockVA++;
@@ -1595,8 +1595,8 @@ void test_realloc_block_FF_COMPLETE()
 	else{
 		cprintf("you failed the fifth test \n");
 	}
-	// float accuracy=(eval/5)*100;
-	// cprintf("you score is %f\n",accuracy);
+	cprintf("You passed %d out of 5 test cases\n",eval);
+	
 }
 
 

@@ -185,7 +185,7 @@ void *alloc_block_FF(uint32 size)
 		uint32 initialBlockSize = get_block_size(currentBlock);
 
 		//current block doesn't have sufficent size
-		if(initialBlockSize<size){
+		if(initialBlockSize<size+2*sizeof(int)){
 			continue;
 		}
 
