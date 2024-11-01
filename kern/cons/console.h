@@ -26,13 +26,13 @@ int cons_getc2(void);
 
 /*2024*/
 
-#define CONS_LCK_METHOD LCK_INT			//Specify the method of LOCK to protect the console
+#define CONS_LCK_METHOD LCK_SLEEP			//Specify the method of LOCK to protect the console
 void cons_lock(void);					//lock the console so that no other processes can deal with it (either read from KB or print no screen)
 void cons_unlock(void);					//unlock the console so that other processes can deal with it
 struct sleeplock conslock;				//sleeplock to protect the console
 struct ksemaphore conssem;				//semaphore to protect the console
 
-#define KBD_INT_BLK_METHOD LCK_INT 		//Specify the method of handling the block/release on KBD
+#define KBD_INT_BLK_METHOD LCK_SLEEP 		//Specify the method of handling the block/release on KBD
 struct Channel KBDchannel;				//channel of waiting for a char from KB
 struct spinlock KBDlock;				//spinlock to protect the KBDchannel
 struct ksemaphore KBDsem;				//semaphore to manage KBD interrupts
