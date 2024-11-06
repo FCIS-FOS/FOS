@@ -867,13 +867,24 @@ void* create_user_kern_stack(uint32* ptr_user_page_directory)
 #if USE_KHEAP
 	//TODO: [PROJECT'24.MS2 - #07] [2] FAULT HANDLER I - create_user_kern_stack
 	// Write your code here, remove the panic and write your code
-	panic("create_user_kern_stack() is not implemented yet...!!");
+	//panic("create_user_kern_stack() is not implemented yet...!!");
 
 	//allocate space for the user kernel stack.
 	//remember to leave its bottom page as a GUARD PAGE (i.e. not mapped)
 	//return a pointer to the start of the allocated space (including the GUARD PAGE)
 	//On failure: panic
-
+	struct FrameInfo *frame;
+	int number_of_frames=KERNEL_STACK_SIZE/PAGE_SIZE;
+	uint32 user_kernel_stack=(uint32)UINT_MAX;
+	bool normal_page=1;
+    for(int i=1;i<=number_of_frames;i++){
+		if(i==number_of_frames)//guard area
+			normal_page=0;
+		allocate_frame(&frame);
+		map_frame(ptr_user_page_directory,frame,user_kernel_stack-(i*PAGE_SIZE),(PERM_PRESENT&normal_page)|PERM_WRITEABLE);	    		
+	}
+	void* stack_pointer=(void *)(user_kernel_stack-KERNEL_STACK_SIZE+PAGE_SIZE);
+	return stack_pointer;
 
 #else
 	if (KERNEL_HEAP_MAX - __cur_k_stk < KERNEL_STACK_SIZE)
