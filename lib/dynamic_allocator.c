@@ -212,10 +212,23 @@ void *alloc_block_FF(uint32 size)
 			return currentBlock;
 		}
 	}
+
 	//if loop ended without hitting a return, no 
-	sbrk(size/PAGE_SIZE);
-	return NULL;
+	int ret = (int)sbrk(ROUNDUP(size,PAGE_SIZE)/PAGE_SIZE);
+
+	if(ret == -1) // sbrk failed
+	{
+		return NULL;	
+	}
+
+	uint32* va = (uint32*)ret;
+
+	free_block(va);
+
+	return alloc_block_FF(size);
+
 }
+
 	
 // [4] ALLOCATE BLOCK BY BEST FIT:
 //=========================================

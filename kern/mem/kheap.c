@@ -15,9 +15,9 @@ int initialize_kheap_dynamic_allocator(uint32 daStart, uint32 initSizeToAllocate
 	//TODO: [PROJECT'24.MS2 - #01] [1] KERNEL HEAP - initialize_kheap_dynamic_allocator
 	// Write your code here, remove the panic and write your code
 	//panic("initialize_kheap_dynamic_allocator() is not implemented yet...!!");
-    start=daStart;
-	brk=initSizeToAllocate;
-	limit=daLimit;
+    start = daStart;
+	brk = daStart + initSizeToAllocate;
+	limit = daLimit;
 	struct FrameInfo *frame;
 	uint32 va=(uint32)daStart;
 	while(va<initSizeToAllocate){
@@ -42,12 +42,68 @@ void* sbrk(int numOfPages)
 	 */
 
 	//MS2: COMMENT THIS LINE BEFORE START CODING==========
-	return (void*)-1 ;
+	//return (void*)-1 ;
 	//====================================================
 
 	//TODO: [PROJECT'24.MS2 - #02] [1] KERNEL HEAP - sbrk
 	// Write your code here, remove the panic and write your code
-	panic("sbrk() is not implemented yet...!!");
+	//panic("sbrk() is not implemented yet...!!");
+
+	// numOfPages = Zero -> return current break
+	if(!numOfPages)
+		return (void*)brk;
+
+
+	// numOfPages > Zero -> follow the logic discussed above
+	uint32 old_brk = brk;
+	uint32 new_brk = brk + (numOfPages * PAGE_SIZE); // the new break rests after the end block so we consider its size
+
+	// new break exceed the hard limit
+	if(new_brk > limit)
+	{
+		return (void*)-1;
+	}
+	
+	// setting current endblock to zero
+	uint32* endBlock = (uint32*)(brk - sizeof(int));
+	*endBlock = 0;
+	
+
+
+	// we are still below the hard limit
+	for(uint32 va = old_brk; va <= new_brk; va += PAGE_SIZE)
+	{
+		struct FrameInfo* ptr_frame_info;
+		int ret = allocate_frame(&ptr_frame_info);
+
+		
+		if(ret == E_NO_MEM)// we may run out of memory (free frames)
+		{
+			// returning the end block to its initial state
+			*endBlock = 1;
+
+			return (void*)-1;
+		}
+
+		// we still have memory so we map the frame
+		int ret2 = map_frame(ptr_page_directory, ptr_frame_info, va, PERM_PRESENT | PERM_WRITEABLE);
+	}
+
+	// setting the new end block 
+	uint32* new_endBlock = (uint32*)(new_brk - sizeof(int));
+	*new_endBlock = 1;
+
+	// setting the new brk
+	brk = new_brk;
+
+	// inserting the new allocated memory in the free blocks list
+	struct BlockElement* new_freeBlock = (struct BlockElement*)(endBlock);
+	set_block_data(endBlock, numOfPages * PAGE_SIZE, 0);
+	LIST_INSERT_TAIL(&freeBlocksList, new_freeBlock);
+
+	// the starting address we can allocate on is the old end block
+	return endBlock;
+
 }
 
 //TODO: [PROJECT'24.MS2 - BONUS#2] [1] KERNEL HEAP - Fast Page Allocator
