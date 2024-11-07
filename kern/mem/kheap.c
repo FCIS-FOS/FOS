@@ -26,6 +26,20 @@ int initialize_kheap_dynamic_allocator(uint32 daStart, uint32 initSizeToAllocate
 		map_frame(ptr_page_directory,frame,va,PERM_PRESENT|PERM_WRITEABLE);
 	}
 	initialize_dynamic_allocator(daStart,initSizeToAllocate);
+
+
+	//initilize page table entires
+	for(uint32 curPage = limit + PAGE_SIZE; curPage < KERNEL_HEAP_MAX; curPage+=PAGE_SIZE){
+		uint32* ptr_page_table = NULL;
+		uint32 ret = get_page_table(ptr_page_directory, curPage, &ptr_page_table);
+
+		ptr_page_table[PTX(curPage)] = 1;
+
+		// for(uint32 i=0; i<PAGE_SIZE/sizeof(uint32);i++){
+		// 	ptr_page_table[i] = 1;
+		// }
+	}
+
 	return 0;
 }
 
@@ -143,11 +157,14 @@ void* kmalloc(unsigned int size)
 	// kpanic_into_prompt("kmalloc() is not implemented yet...!!");
 	//division with rouding up
 
+
+
 	if(size <= DYN_ALLOC_MAX_BLOCK_SIZE){
 		return alloc_block_FF(size);
 	}
 
-	uint32 requiredPages = (size+PAGE_SIZE-1)/PAGE_SIZE;
+	// uint32 requiredPages = (size+PAGE_SIZE-1)/PAGE_SIZE;
+	uint32 requiredPages = ROUNDUP(size,PAGE_SIZE)/PAGE_SIZE;
 	const uint32 HARD_LIMIT = limit;
 	uint32 pages = 0;
 	uint32 allocStart = HARD_LIMIT + PAGE_SIZE;
