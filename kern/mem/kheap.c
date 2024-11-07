@@ -16,7 +16,7 @@ int initialize_kheap_dynamic_allocator(uint32 daStart, uint32 initSizeToAllocate
 	// Write your code here, remove the panic and write your code
 	//panic("initialize_kheap_dynamic_allocator() is not implemented yet...!!");
     start=daStart;
-	brk=initSizeToAllocate;
+	brk=daStart+initSizeToAllocate;
 	limit=daLimit;
 	struct FrameInfo *frame;
 	uint32 va=(uint32)daStart;
