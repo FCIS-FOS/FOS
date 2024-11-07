@@ -108,12 +108,93 @@ void* sbrk(int numOfPages)
 
 //TODO: [PROJECT'24.MS2 - BONUS#2] [1] KERNEL HEAP - Fast Page Allocator
 
+
+//helper function for kmalloc return 1 if page is free
+bool pageIsFree(void* va){
+	uint32* ptr_pageTable = NULL;
+	struct FrameInfo* frameInfo = get_frame_info(ptr_page_directory, (uint32)va, &ptr_pageTable);
+
+	if(frameInfo == NULL){
+		return 1;
+	}else{
+		return 0;
+	}
+
+	// uint32* pageTablePtr;
+	// uint32 ret = get_page_table(ptr_page_directory, (uint32)va, &pageTablePtr);
+
+	// if(ret == TABLE_NOT_EXIST){//page table doesn't exist
+	// 	return 0;
+	// }
+
+	// uint32 tableEntry = pageTablePtr[PTX(va)];
+
+	// if(tableEntry & PERM_PRESENT){
+	// 	return 0;
+	// }else{
+	// 	return 1;
+	// }
+}
+
 void* kmalloc(unsigned int size)
 {
 	//TODO: [PROJECT'24.MS2 - #03] [1] KERNEL HEAP - kmalloc
 	// Write your code here, remove the panic and write your code
-	kpanic_into_prompt("kmalloc() is not implemented yet...!!");
+	// kpanic_into_prompt("kmalloc() is not implemented yet...!!");
+	//division with rouding up
 
+	if(size <= DYN_ALLOC_MAX_BLOCK_SIZE){
+		return alloc_block_FF(size);
+	}
+
+	uint32 requiredPages = (size+PAGE_SIZE-1)/PAGE_SIZE;
+	const uint32 HARD_LIMIT = limit;
+	uint32 pages = 0;
+	uint32 allocStart = HARD_LIMIT + PAGE_SIZE;
+
+
+	uint32 currentPage = HARD_LIMIT + PAGE_SIZE;
+	while(currentPage < KERNEL_HEAP_MAX){
+		if(pages == requiredPages){
+			break;
+		}
+
+		if(pageIsFree((void*)currentPage)){
+			pages++;
+			currentPage += PAGE_SIZE;
+		}else{
+			if(pages<requiredPages){
+				while(currentPage<KERNEL_HEAP_MAX && !pageIsFree((void*)currentPage)){
+					currentPage+=PAGE_SIZE;
+				}
+				allocStart = currentPage;
+				pages = 0;
+			}
+		}
+
+	}
+
+	if(pages!=requiredPages){
+		return NULL;
+	}else{
+		uint32 addr = allocStart;
+		for(int i = 0; i<requiredPages; i++){
+			struct FrameInfo *frame;
+			int allocRet = allocate_frame(&frame);
+			if(allocRet == E_NO_MEM){
+				return NULL;
+			}
+
+			int mapRet = map_frame(ptr_page_directory, frame, addr, PERM_WRITEABLE|PERM_PRESENT);
+			if(mapRet == E_NO_MEM){
+				return NULL;
+			}
+
+			addr += PAGE_SIZE;
+		}
+	}
+
+	return (void*)allocStart;
 	// use "isKHeapPlacementStrategyFIRSTFIT() ..." functions to check the current strategy
 
 }
