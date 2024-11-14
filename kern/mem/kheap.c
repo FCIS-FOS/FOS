@@ -69,8 +69,10 @@ void* sbrk(int numOfPages)
 
 
 	// numOfPages > Zero -> follow the logic discussed above
+
+	uint32 increment = (numOfPages * PAGE_SIZE);
 	uint32 old_brk = brk;
-	uint32 new_brk = brk + (numOfPages * PAGE_SIZE); // the new break rests after the end block so we consider its size
+	uint32 new_brk = brk + increment; // the new break rests after the end block so we consider its size
 
 	// new break exceed the hard limit
 	if(new_brk > limit)
@@ -112,11 +114,11 @@ void* sbrk(int numOfPages)
 
 	// inserting the new allocated memory in the free blocks list
 	struct BlockElement* new_freeBlock = (struct BlockElement*)(endBlock);
-	set_block_data(endBlock, numOfPages * PAGE_SIZE, 0);
+	set_block_data(endBlock, increment, 1);
 	LIST_INSERT_TAIL(&freeBlocksList, new_freeBlock);
 
 	// the starting address we can allocate on is the old end block
-	return endBlock;
+	return (uint32*)old_brk;
 
 }
 

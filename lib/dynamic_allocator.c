@@ -213,7 +213,7 @@ void *alloc_block_FF(uint32 size)
 		}
 	}
 
-	//if loop ended without hitting a return, no 
+	// [MS2 - KERNEL HEAP - sbrk] if loop ended without hitting a return  
 	int ret = (int)sbrk(ROUNDUP(size,PAGE_SIZE)/PAGE_SIZE);
 
 	if(ret == -1) // sbrk failed
