@@ -15,12 +15,14 @@ int initialize_kheap_dynamic_allocator(uint32 daStart, uint32 initSizeToAllocate
 	//TODO: [PROJECT'24.MS2 - #01] [1] KERNEL HEAP - initialize_kheap_dynamic_allocator
 	// Write your code here, remove the panic and write your code
 	//panic("initialize_kheap_dynamic_allocator() is not implemented yet...!!");
-    start = daStart;
-	brk = daStart + initSizeToAllocate;
-	limit = daLimit;
+	if(daStart+initSizeToAllocate>daLimit)
+	 panic("exceeds limit");
+    start=daStart;
+	brk=daStart+initSizeToAllocate;
+	limit=daLimit;
 	struct FrameInfo *frame;
 	uint32 va=(uint32)daStart;
-	while(va<initSizeToAllocate){
+	while(va<daStart+initSizeToAllocate){
 		allocate_frame(&frame);
 		va+=PAGE_SIZE;
 		map_frame(ptr_page_directory,frame,va,PERM_PRESENT|PERM_WRITEABLE);

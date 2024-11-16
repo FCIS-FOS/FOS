@@ -21,12 +21,9 @@ inline struct WorkingSetElement* env_page_ws_list_create_element(struct Env* e, 
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
 	//panic("env_page_ws_list_create_element is not implemented yet");
 	//Your Code is Here...
-    struct WorkingSetElement new_element;
-	new_element.virtual_address=(unsigned int)virtual_address;
-   // e->page_last_WS_element=new_working_set;
-   struct WorkingSetElement *ptr_new_element=&new_element;
-   
-	return ptr_new_element;
+    struct WorkingSetElement *new_element=(struct WorkingSetElement*)kmalloc(sizeof(struct WorkingSetElement));
+	new_element->virtual_address=(unsigned int)virtual_address;
+	return new_element;
 }
 inline void env_page_ws_invalidate(struct Env* e, uint32 virtual_address)
 {
