@@ -20,7 +20,7 @@ int initialize_kheap_dynamic_allocator(uint32 daStart, uint32 initSizeToAllocate
 	limit=daLimit;
 	struct FrameInfo *frame;
 	uint32 va=(uint32)daStart;
-	while(va<initSizeToAllocate){
+	while(va<daStart+initSizeToAllocate){
 		allocate_frame(&frame);
 		va+=PAGE_SIZE;
 		map_frame(ptr_page_directory,frame,va,PERM_PRESENT|PERM_WRITEABLE);
