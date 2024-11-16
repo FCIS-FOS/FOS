@@ -24,8 +24,8 @@ int initialize_kheap_dynamic_allocator(uint32 daStart, uint32 initSizeToAllocate
 	uint32 va=(uint32)daStart;
 	while(va<daStart+initSizeToAllocate){
 		allocate_frame(&frame);
-		va+=PAGE_SIZE;
 		map_frame(ptr_page_directory,frame,va,PERM_PRESENT|PERM_WRITEABLE);
+		va+=PAGE_SIZE;
 	}
 	initialize_dynamic_allocator(daStart,initSizeToAllocate);
 
@@ -116,7 +116,7 @@ void* sbrk(int numOfPages)
 
 	// inserting the new allocated memory in the free blocks list
 	struct BlockElement* new_freeBlock = (struct BlockElement*)(endBlock);
-	set_block_data(endBlock, increment, 1);
+	set_block_data( (void*)old_brk, increment, 0);
 	LIST_INSERT_TAIL(&freeBlocksList, new_freeBlock);
 
 	// the starting address we can allocate on is the old end block
