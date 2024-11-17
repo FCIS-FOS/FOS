@@ -89,7 +89,7 @@ void* sbrk(int numOfPages)
 
 
 	// we are still below the hard limit
-	for(uint32 va = old_brk; va <= new_brk; va += PAGE_SIZE)
+	for(uint32 va = old_brk; va < new_brk; va += PAGE_SIZE)
 	{
 		struct FrameInfo* ptr_frame_info;
 		int ret = allocate_frame(&ptr_frame_info);
@@ -105,6 +105,14 @@ void* sbrk(int numOfPages)
 
 		// we still have memory so we map the frame
 		int ret2 = map_frame(ptr_page_directory, ptr_frame_info, va, PERM_PRESENT | PERM_WRITEABLE);
+
+		if(ret2 == E_NO_MEM)// no table of a given virtual address and no frames to make one 
+		{
+			// returning the end block to its initial state
+			*endBlock = 1;
+
+			return (void*)-1;
+		}
 	}
 
 	// setting the new end block 
@@ -115,7 +123,7 @@ void* sbrk(int numOfPages)
 	brk = new_brk;
 
 	// inserting the new allocated memory in the free blocks list
-	struct BlockElement* new_freeBlock = (struct BlockElement*)(endBlock);
+	struct BlockElement* new_freeBlock = (struct BlockElement*)(old_brk);
 	set_block_data( (void*)old_brk, increment, 0);
 	LIST_INSERT_TAIL(&freeBlocksList, new_freeBlock);
 
