@@ -218,7 +218,9 @@ void* kmalloc(unsigned int size)
 			if(mapRet == E_NO_MEM){
 				return NULL;
 			}
-
+			//store the info that is needed for Kfree and kheap_virtual_address
+			frame->allocStart=allocStart;
+			frame->allocSize=requiredPages;
 			addr += PAGE_SIZE;
 		}
 	}
@@ -232,11 +234,32 @@ void kfree(void* virtual_address)
 {
 	//TODO: [PROJECT'24.MS2 - #04] [1] KERNEL HEAP - kfree
 	// Write your code here, remove the panic and write your code
-	panic("kfree() is not implemented yet...!!");
+	// panic("kfree() is not implemented yet...!!");
 
 	//you need to get the size of the given allocation using its address
 	//refer to the project presentation and documentation for details
+	uint32 virtual_address_int=(uint32)virtual_address;
+	//Virtual Address is in Block Allocator Range
+    if(virtual_address_int>=start && virtual_address_int<limit){
+        free_block(virtual_address);
+    }
+	//Virtual Address is in Page Allocator Range
+    else if (virtual_address_int>=limit+PAGE_SIZE && virtual_address_int<KERNEL_HEAP_MAX){
+        uint32 * ptr_page_table=NULL;
 
+        struct FrameInfo *frame_info = get_frame_info(ptr_page_directory,virtual_address_int,&ptr_page_table);
+		// get the starting point of the page allocation and the number of pages to iterate over
+		uint32 allocStart=frame_info->allocStart;
+		uint32 allocSize=frame_info->allocSize;
+		// looping over the pages and unmapping the frames they are refrencing 
+		for(uint32 current=allocStart;current<allocStart+(allocSize*PAGE_SIZE);current+=PAGE_SIZE){
+			unmap_frame(ptr_page_directory,current);
+		}
+    }
+	//Virtual Address is invalid
+    else{
+        panic("invalid address");
+    }
 }
 
 unsigned int kheap_physical_address(unsigned int virtual_address)
