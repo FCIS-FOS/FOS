@@ -60,12 +60,33 @@ void kfree(void* virtual_address)
 	//refer to the project presentation and documentation for details
 
 }
-
 unsigned int kheap_physical_address(unsigned int virtual_address)
 {
 	//TODO: [PROJECT'24.MS2 - #05] [1] KERNEL HEAP - kheap_physical_address
 	// Write your code here, remove the panic and write your code
-	panic("kheap_physical_address() is not implemented yet...!!");
+	//panic("kheap_physical_address() is not implemented yet...!!");
+	uint32* page_table=NULL;
+	get_page_table(ptr_page_directory,(uint32)virtual_address,&page_table);
+	if (page_table!=NULL){
+		uint32 entry=page_table[PTX((uint32)virtual_address)];
+
+
+		uint32 is_mapped=entry & PERM_PRESENT;
+		if (is_mapped==0)return 0;
+		// uint32 off=virtual_address <<20;
+		// off=off>>20;
+		uint32 off = virtual_address & 0xFFF;
+		
+
+
+		uint32 physical_add=entry>>12;//to extract the frame number
+		physical_add=(physical_add<<12)+off;
+		
+		return physical_add;
+	}
+	
+	return 0;
+
 
 	//return the physical address corresponding to given virtual_address
 	//refer to the project presentation and documentation for details
@@ -77,13 +98,33 @@ unsigned int kheap_virtual_address(unsigned int physical_address)
 {
 	//TODO: [PROJECT'24.MS2 - #06] [1] KERNEL HEAP - kheap_virtual_address
 	// Write your code here, remove the panic and write your code
-	panic("kheap_virtual_address() is not implemented yet...!!");
+	//panic("kheap_virtual_address() is not implemented yet...!!");
+
+	struct FrameInfo* ptr_frame_info=to_frame_info((uint32)physical_address);
+	if (ptr_frame_info == NULL) {
+    return 0;
+	}
+	//
+	
+	if(ptr_frame_info->references==1){
+		if (ptr_frame_info->bufferedVA==0)
+		return 0;
+		
+		uint32 off = physical_address & 0xFFF;
+		uint32 vir_address=ptr_frame_info->bufferedVA;
+		vir_address+=off;
+		return vir_address;
+	}
+	else return 0;
+
+
 
 	//return the virtual address corresponding to given physical_address
 	//refer to the project presentation and documentation for details
 
 	//EFFICIENT IMPLEMENTATION ~O(1) IS REQUIRED ==================
 }
+
 //=================================================================================//
 //============================== BONUS FUNCTION ===================================//
 //=================================================================================//
