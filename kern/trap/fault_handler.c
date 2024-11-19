@@ -11,6 +11,7 @@
 #include <kern/cpu/cpu.h>
 #include <kern/disk/pagefile_manager.h>
 #include <kern/mem/memory_manager.h>
+#include <kern/mem/kheap.h>
 
 //2014 Test Free(): Set it to bypass the PAGE FAULT on an instruction with this length and continue executing the next one
 // 0 means don't bypass the PAGE FAULT
@@ -155,7 +156,7 @@ void fault_handler(struct Trapframe *tf)
 			if((fault_va & PERM_PRESENT) == PERM_PRESENT && fault_va < (uint32)KERNEL_BASE && (fault_va & PERM_WRITEABLE) == PERM_WRITEABLE)
 				invaild=0;
 			
-			if(invaild)
+			if(!invaild)
 				env_exit();
 			/*============================================================================================*/
 		}
@@ -217,25 +218,34 @@ void table_fault_handler(struct Env * curenv, uint32 fault_va)
 //=========================
 // [3] PAGE FAULT HANDLER:
 //=========================
-void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
-{
+void page_fault_handler(struct Env *faulted_env, uint32 fault_va) {
 #if USE_KHEAP
-		struct WorkingSetElement *victimWSElement = NULL;
-		uint32 wsSize = LIST_SIZE(&(faulted_env->page_WS_list));
+    struct WorkingSetElement *victimWSElement = NULL;
+    uint32 wsSize = LIST_SIZE(&(faulted_env->page_WS_list));
 #else
-		int iWS =faulted_env->page_last_WS_index;
-		uint32 wsSize = env_page_ws_get_size(faulted_env);
+    int iWS = faulted_env->page_last_WS_index;
+    uint32 wsSize = env_page_ws_get_size(faulted_env);
 #endif
 
-	if(wsSize < (faulted_env->page_WS_max_size))
-	{
-		//cprintf("PLACEMENT=========================WS Size = %d\n", wsSize );
-		//TODO: [PROJECT'24.MS2 - #09] [2] FAULT HANDLER I - Placement
-		// Write your code here, remove the panic and write your code
-		panic("page_fault_handler().PLACEMENT is not implemented yet...!!");
+    // Requirement 1: Ensure the working set has space
+        if (wsSize < faulted_env->page_WS_max_size) {
 
-		//refer to the project presentation and documentation for details
-	}
+        if (!pf_read_env_page(faulted_env, (void *)fault_va)) {
+            if (!((fault_va >= (uint32)ptr_stack_bottom && fault_va <= (uint32)ptr_stack_top) || (fault_va >= KERNEL_HEAP_START && fault_va <= KERNEL_HEAP_MAX))) 
+            return;
+        }
+
+        // Initialize new ws element
+        struct WorkingSetElement *new_wse = (struct WorkingSetElement *)kmalloc(sizeof(struct WorkingSetElement));
+
+        new_wse->virtual_address = fault_va;
+        new_wse->prev_next_info.le_next = NULL;
+
+        // Add element to the ws list
+        LIST_INSERT_HEAD(&(faulted_env->page_WS_list), new_wse);
+        faulted_env->page_last_WS_index = wsSize; // Update the last ws index
+
+    }
 	else
 	{
 		//cprintf("REPLACEMENT=========================WS Size = %d\n", wsSize );
