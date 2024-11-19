@@ -27,8 +27,8 @@ int initialize_kheap_dynamic_allocator(uint32 daStart, uint32 initSizeToAllocate
 		map_frame(ptr_page_directory,frame,va,PERM_PRESENT|PERM_WRITEABLE);
 		
 			uint32* page_table=NULL;
-			struct FrameInfo* ptr_frame_info=get_frame_info(ptr_page_directory,va,&page_table);
-			ptr_frame_info->mappedVA=va;
+			// to store virtual address to frame info
+			frame->mappedVA=va;
 		
 
 		va+=PAGE_SIZE;
@@ -111,9 +111,10 @@ void* sbrk(int numOfPages)
 
 		// we still have memory so we map the frame
 		int ret2 = map_frame(ptr_page_directory, ptr_frame_info, va, PERM_PRESENT | PERM_WRITEABLE);
-			
-		// to store virtual address to frame info
-		// ptr_frame_info->bufferedVA=va;
+			// to store virtual address to frame info
+			ptr_frame_info->mappedVA=va;
+		
+		
 
 		if(ret2 == E_NO_MEM)// no table of a given virtual address and no frames to make one 
 		{
@@ -266,9 +267,10 @@ void kfree(void* virtual_address)
 		uint32 allocSize=frame_info->allocSize;
 		// looping over the pages and unmapping the frames they are refrencing 
 		for(uint32 current=allocStart;current<allocStart+(allocSize*PAGE_SIZE);current+=PAGE_SIZE){
-			unmap_frame(ptr_page_directory,current);
 			struct FrameInfo *frame = get_frame_info(ptr_page_directory,current,&ptr_page_table);
-		
+			frame->mappedVA=0;
+			unmap_frame(ptr_page_directory,current);
+			
 		}
     }
 	//Virtual Address is invalid
@@ -324,11 +326,11 @@ unsigned int kheap_virtual_address(unsigned int physical_address)
 	//
 	
 	if(ptr_frame_info->references==1){
-		if (ptr_frame_info->bufferedVA==0)
+		if (ptr_frame_info->mappedVA==0)
 		return 0;
 		
 		uint32 off = physical_address & 0xFFF;
-		uint32 vir_address=ptr_frame_info->bufferedVA;
+		uint32 vir_address=ptr_frame_info->mappedVA;
 		vir_address+=off;
 		return vir_address;
 	}
