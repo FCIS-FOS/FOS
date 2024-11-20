@@ -35,7 +35,7 @@ int initialize_kheap_dynamic_allocator(uint32 daStart, uint32 initSizeToAllocate
 		uint32* ptr_page_table = NULL;
 		uint32 ret = get_page_table(ptr_page_directory, curPage, &ptr_page_table);
 
-		ptr_page_table[PTX(curPage)] = 1;
+		ptr_page_table[PTX(curPage)] = 0;
 	}
 
 	return 0;
