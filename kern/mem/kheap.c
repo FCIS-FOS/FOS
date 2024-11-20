@@ -25,6 +25,12 @@ int initialize_kheap_dynamic_allocator(uint32 daStart, uint32 initSizeToAllocate
 	while(va<daStart+initSizeToAllocate){
 		allocate_frame(&frame);
 		map_frame(ptr_page_directory,frame,va,PERM_PRESENT|PERM_WRITEABLE);
+		
+			uint32* page_table=NULL;
+			// to store virtual address to frame info
+			frame->mappedVA=va;
+		
+
 		va+=PAGE_SIZE;
 	}
 	initialize_dynamic_allocator(daStart,initSizeToAllocate);
@@ -101,6 +107,10 @@ void* sbrk(int numOfPages)
 
 		// we still have memory so we map the frame
 		int ret2 = map_frame(ptr_page_directory, ptr_frame_info, va, PERM_PRESENT | PERM_WRITEABLE);
+			// to store virtual address to frame info
+			ptr_frame_info->mappedVA=va;
+		
+		
 
 		if(ret2 == E_NO_MEM)// no table of a given virtual address and no frames to make one 
 		{
@@ -202,6 +212,10 @@ void* kmalloc(unsigned int size)
 			//store the info that is needed for Kfree and kheap_virtual_address
 			frame->allocStart=allocStart;
 			frame->allocSize=requiredPages;
+      
+			//to store virtual address to the frame info
+			frame->mappedVA=addr;
+      
 			addr += PAGE_SIZE;
 		}
 	}
@@ -229,14 +243,17 @@ void kfree(void* virtual_address)
         uint32 * ptr_page_table=NULL;
 
         struct FrameInfo *frame_info = get_frame_info(ptr_page_directory,virtual_address_int,&ptr_page_table);
-		// get the starting point of the page allocation and the number of pages to iterate over
-		uint32 allocStart=frame_info->allocStart;
-		uint32 allocSize=frame_info->allocSize;
-		// looping over the pages and unmapping the frames they are refrencing 
-		for(uint32 current=allocStart;current<allocStart+(allocSize*PAGE_SIZE);current+=PAGE_SIZE){
-			unmap_frame(ptr_page_directory,current);
-		}
+		    // get the starting point of the page allocation and the number of pages to iterate over
+        uint32 allocStart=frame_info->allocStart;
+        uint32 allocSize=frame_info->allocSize;
+        // looping over the pages and unmapping the frames they are refrencing 
+        for(uint32 current=allocStart;current<allocStart+(allocSize*PAGE_SIZE);current+=PAGE_SIZE){
+            struct FrameInfo *frame = get_frame_info(ptr_page_directory,current,&ptr_page_table);
+            frame->mappedVA=0;
+            unmap_frame(ptr_page_directory,current);
+        }
     }
+  
 	//Virtual Address is invalid
     else{
         panic("invalid address");
@@ -247,7 +264,29 @@ unsigned int kheap_physical_address(unsigned int virtual_address)
 {
 	//TODO: [PROJECT'24.MS2 - #05] [1] KERNEL HEAP - kheap_physical_address
 	// Write your code here, remove the panic and write your code
-	panic("kheap_physical_address() is not implemented yet...!!");
+	//panic("kheap_physical_address() is not implemented yet...!!");
+	uint32* page_table=NULL;
+	get_page_table(ptr_page_directory,(uint32)virtual_address,&page_table);
+	if (page_table!=NULL){
+		uint32 entry=page_table[PTX((uint32)virtual_address)];
+
+
+		uint32 is_mapped=entry & PERM_PRESENT;
+		if (is_mapped==0)return 0;
+		// uint32 off=virtual_address <<20;
+		// off=off>>20;
+		uint32 off = virtual_address & 0xFFF;
+		
+
+
+		uint32 physical_add=entry>>12;//to extract the frame number
+		physical_add=(physical_add<<12)+off;
+		
+		return physical_add;
+	}
+	
+	return 0;
+
 
 	//return the physical address corresponding to given virtual_address
 	//refer to the project presentation and documentation for details
@@ -259,13 +298,33 @@ unsigned int kheap_virtual_address(unsigned int physical_address)
 {
 	//TODO: [PROJECT'24.MS2 - #06] [1] KERNEL HEAP - kheap_virtual_address
 	// Write your code here, remove the panic and write your code
-	panic("kheap_virtual_address() is not implemented yet...!!");
+	//panic("kheap_virtual_address() is not implemented yet...!!");
+
+	struct FrameInfo* ptr_frame_info=to_frame_info((uint32)physical_address);
+	if (ptr_frame_info == NULL) {
+    return 0;
+	}
+	//
+	
+	if(ptr_frame_info->references==1){
+		if (ptr_frame_info->mappedVA==0)
+		return 0;
+		
+		uint32 off = physical_address & 0xFFF;
+		uint32 vir_address=ptr_frame_info->mappedVA;
+		vir_address+=off;
+		return vir_address;
+	}
+	else return 0;
+
+
 
 	//return the virtual address corresponding to given physical_address
 	//refer to the project presentation and documentation for details
 
 	//EFFICIENT IMPLEMENTATION ~O(1) IS REQUIRED ==================
 }
+
 //=================================================================================//
 //============================== BONUS FUNCTION ===================================//
 //=================================================================================//
