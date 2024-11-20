@@ -36,10 +36,6 @@ int initialize_kheap_dynamic_allocator(uint32 daStart, uint32 initSizeToAllocate
 		uint32 ret = get_page_table(ptr_page_directory, curPage, &ptr_page_table);
 
 		ptr_page_table[PTX(curPage)] = 1;
-
-		// for(uint32 i=0; i<PAGE_SIZE/sizeof(uint32);i++){
-		// 	ptr_page_table[i] = 1;
-		// }
 	}
 
 	return 0;
@@ -145,21 +141,6 @@ bool pageIsFree(void* va){
 	}else{
 		return 0;
 	}
-
-	// uint32* pageTablePtr;
-	// uint32 ret = get_page_table(ptr_page_directory, (uint32)va, &pageTablePtr);
-
-	// if(ret == TABLE_NOT_EXIST){//page table doesn't exist
-	// 	return 0;
-	// }
-
-	// uint32 tableEntry = pageTablePtr[PTX(va)];
-
-	// if(tableEntry & PERM_PRESENT){
-	// 	return 0;
-	// }else{
-	// 	return 1;
-	// }
 }
 
 void* kmalloc(unsigned int size)
