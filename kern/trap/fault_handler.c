@@ -153,16 +153,14 @@ void fault_handler(struct Trapframe *tf)
 			//your code is here
 			uint32 tu=(fault_va&PERM_PRESENT);
             uint32 go=(fault_va&PERM_WRITEABLE);
-            //cprintf("%d",go);
-            //cprintf("%d",tu);
-            uint32 r=(((fault_va&0x800)&0x400)&0x200);
-            //cprintf("%d",r);
             int per=pt_get_page_permissions(faulted_env->env_page_directory, fault_va);
-            cprintf("%d/n",per);
+            //cprintf("%d ",per);
             if(fault_va >=(uint32)USER_LIMIT)
              env_exit();
             if((per & PERM_PRESENT) == PERM_PRESENT &&!((per & PERM_WRITEABLE) == PERM_WRITEABLE))
                 env_exit();
+            if(fault_va>=USER_HEAP_START&&fault_va<=USER_HEAP_MAX&&((per & PERM_AVAILABLE)!=0x200||(per & PERM_AVAILABLE)!=0x400||(per & PERM_AVAILABLE)!=0x800))
+               env_exit();
 			/*============================================================================================*/
 		}
 
