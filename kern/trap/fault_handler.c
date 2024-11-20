@@ -241,18 +241,22 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 		cprintf("Fault VA: 0x%08x, WS Size: %u, WS Max Size: %u\n", fault_va, wsSize, faulted_env->page_WS_max_size);
 
 		allocate_frame(&ptr_frame_info);
-		int ret = pf_read_env_page(faulted_env,(uint32*)fault_va); 
 		map_frame(faulted_env->env_page_directory,ptr_frame_info,fault_va,PERM_USER | PERM_WRITEABLE | PERM_PRESENT);
 
-		if (ret == E_PAGE_NOT_EXIST_IN_PF) { 
+		int ret = pf_read_env_page(faulted_env,(uint32*)fault_va); 
+
+		if (ret == E_PAGE_NOT_EXIST_IN_PF) 
+		{ 
 			if (!((fault_va >= USTACKBOTTOM && fault_va <= USTACKTOP) || (fault_va >= USER_HEAP_START && fault_va <= USER_HEAP_MAX)))
 			env_exit();
 		}
+
 		// Initialize new ws element
-	if (!env_page_ws_list_create_element(faulted_env, fault_va) ) {
-		panic("Failed to create WS element for fault_va 0x%08x\n", fault_va);
-	}
-	faulted_env->page_last_WS_index = (faulted_env->page_last_WS_index + 1) % faulted_env->page_WS_max_size;
+		struct WorkingSetElement* new_element = env_page_ws_list_create_element(faulted_env, fault_va) ;
+		LIST_INSERT_TAIL(&(faulted_env->page_WS_list),new_element);
+		
+		//faulted_env->page_last_WS_element= new_element;
+        faulted_env->page_last_WS_index = LIST_SIZE(&(faulted_env->page_WS_list)) - 1;
 	}
 	else
 	{
