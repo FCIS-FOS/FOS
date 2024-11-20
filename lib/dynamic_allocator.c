@@ -196,7 +196,6 @@ void *alloc_block_FF(uint32 size)
 
 			struct BlockElement* splitSegment = (struct BlockElement*)((uint32)currentBlock + size + 8);
 			set_block_data(splitSegment, initialBlockSize-(size+8), 0);
-
 			struct BlockElement* prev = LIST_PREV(currentBlock);
 			LIST_REMOVE(&freeBlocksList, currentBlock);
 			if(prev == NULL){
@@ -212,10 +211,63 @@ void *alloc_block_FF(uint32 size)
 			return currentBlock;
 		}
 	}
-	//if loop ended without hitting a return, no 
-	sbrk(size/PAGE_SIZE);
-	return NULL;
+
+	// [MS2 - KERNEL HEAP - sbrk] if loop ended without hitting a return  
+	int ret = (int)sbrk(ROUNDUP(size,PAGE_SIZE)/PAGE_SIZE);
+
+	if(ret == -1) // sbrk failed
+	{
+		return NULL;	
+	}
+
+	uint32* va = (uint32*)ret;
+
+	//free_block(va);
+
+	struct BlockElement* leftAdr;
+	bool isLeftFree;
+	uint32 leftSize;
+	uint32* leftMeta = (uint32*)va - 2;
+	//current block is first block in heap
+
+	leftSize = *leftMeta & (UINT_MAX-1);
+	isLeftFree = (~(*leftMeta) & 0x1);
+	leftAdr = (struct BlockElement*) ((uint32)va - leftSize);
+
+	struct BlockElement* anchorBlock;
+	if(isLeftFree){
+		anchorBlock = leftAdr;
+		LIST_REMOVE(&freeBlocksList, leftAdr);
+
+		//coalecing required block
+		set_block_data(anchorBlock, get_block_size(va)+leftSize, 0);
+
+		//linked list manipulation
+		struct BlockElement* prev = NULL;
+		struct BlockElement*  it = NULL;
+
+		LIST_FOREACH(it, &freeBlocksList){
+		if((uint32)it > (uint32)anchorBlock){
+			break;
+		}
+		prev = it;
+	}
+
+		if(prev == NULL){
+			LIST_INSERT_HEAD(&freeBlocksList, anchorBlock);
+		}else{
+			LIST_INSERT_AFTER(&freeBlocksList, prev,anchorBlock);
+		}
+
+
+
+	}
+
+
+	return alloc_block_FF(size);
+
 }
+
 	
 // [4] ALLOCATE BLOCK BY BEST FIT:
 //=========================================
