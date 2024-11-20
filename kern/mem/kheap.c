@@ -41,11 +41,7 @@ int initialize_kheap_dynamic_allocator(uint32 daStart, uint32 initSizeToAllocate
 		uint32* ptr_page_table = NULL;
 		uint32 ret = get_page_table(ptr_page_directory, curPage, &ptr_page_table);
 
-		ptr_page_table[PTX(curPage)] = 1;
-
-		// for(uint32 i=0; i<PAGE_SIZE/sizeof(uint32);i++){
-		// 	ptr_page_table[i] = 1;
-		// }
+		ptr_page_table[PTX(curPage)] = 0;
 	}
 
 	return 0;
@@ -155,21 +151,6 @@ bool pageIsFree(void* va){
 	}else{
 		return 0;
 	}
-
-	// uint32* pageTablePtr;
-	// uint32 ret = get_page_table(ptr_page_directory, (uint32)va, &pageTablePtr);
-
-	// if(ret == TABLE_NOT_EXIST){//page table doesn't exist
-	// 	return 0;
-	// }
-
-	// uint32 tableEntry = pageTablePtr[PTX(va)];
-
-	// if(tableEntry & PERM_PRESENT){
-	// 	return 0;
-	// }else{
-	// 	return 1;
-	// }
 }
 
 void* kmalloc(unsigned int size)
@@ -231,10 +212,10 @@ void* kmalloc(unsigned int size)
 			//store the info that is needed for Kfree and kheap_virtual_address
 			frame->allocStart=allocStart;
 			frame->allocSize=requiredPages;
-
+      
 			//to store virtual address to the frame info
 			frame->mappedVA=addr;
-
+      
 			addr += PAGE_SIZE;
 		}
 	}
@@ -262,17 +243,17 @@ void kfree(void* virtual_address)
         uint32 * ptr_page_table=NULL;
 
         struct FrameInfo *frame_info = get_frame_info(ptr_page_directory,virtual_address_int,&ptr_page_table);
-		// get the starting point of the page allocation and the number of pages to iterate over
-		uint32 allocStart=frame_info->allocStart;
-		uint32 allocSize=frame_info->allocSize;
-		// looping over the pages and unmapping the frames they are refrencing 
-		for(uint32 current=allocStart;current<allocStart+(allocSize*PAGE_SIZE);current+=PAGE_SIZE){
-			struct FrameInfo *frame = get_frame_info(ptr_page_directory,current,&ptr_page_table);
-			frame->mappedVA=0;
-			unmap_frame(ptr_page_directory,current);
-			
-		}
+		    // get the starting point of the page allocation and the number of pages to iterate over
+        uint32 allocStart=frame_info->allocStart;
+        uint32 allocSize=frame_info->allocSize;
+        // looping over the pages and unmapping the frames they are refrencing 
+        for(uint32 current=allocStart;current<allocStart+(allocSize*PAGE_SIZE);current+=PAGE_SIZE){
+            struct FrameInfo *frame = get_frame_info(ptr_page_directory,current,&ptr_page_table);
+            frame->mappedVA=0;
+            unmap_frame(ptr_page_directory,current);
+        }
     }
+  
 	//Virtual Address is invalid
     else{
         panic("invalid address");
