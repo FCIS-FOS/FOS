@@ -221,21 +221,21 @@ void table_fault_handler(struct Env * curenv, uint32 fault_va)
 //=========================
 // [3] PAGE FAULT HANDLER:
 //=========================
-void page_fault_handler(struct Env *faulted_env, uint32 fault_va) {
+void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
+{
 #if USE_KHEAP
-    struct WorkingSetElement *victimWSElement = NULL;
-    uint32 wsSize = LIST_SIZE(&(faulted_env->page_WS_list));
+		struct WorkingSetElement *victimWSElement = NULL;
+		uint32 wsSize = LIST_SIZE(&(faulted_env->page_WS_list));
 #else
-    int iWS = faulted_env->page_last_WS_index;
-    uint32 wsSize = env_page_ws_get_size(faulted_env);
+		int iWS =faulted_env->page_last_WS_index;
+		uint32 wsSize = env_page_ws_get_size(faulted_env);
 #endif
 
-    if (wsSize < faulted_env->page_WS_max_size)
-	 {
+	if(wsSize < (faulted_env->page_WS_max_size))
+	{
 		//cprintf("PLACEMENT=========================WS Size = %d\n", wsSize );
 		//TODO: [PROJECT'24.MS2 - #09] [2] FAULT HANDLER I - Placement
 		// Write your code here, remove the panic and write your code
-		
 		uint32 *ptr_page_table = NULL;
 		struct FrameInfo *ptr_frame_info =get_frame_info(faulted_env->env_page_directory,fault_va,&ptr_page_table);
 		cprintf("Fault VA: 0x%08x, WS Size: %u, WS Max Size: %u\n", fault_va, wsSize, faulted_env->page_WS_max_size);
@@ -253,8 +253,6 @@ void page_fault_handler(struct Env *faulted_env, uint32 fault_va) {
 		panic("Failed to create WS element for fault_va 0x%08x\n", fault_va);
 	}
 	faulted_env->page_last_WS_index = (faulted_env->page_last_WS_index + 1) % faulted_env->page_WS_max_size;
-		
-	
 	}
 	else
 	{
@@ -272,4 +270,3 @@ void __page_fault_handler_with_buffering(struct Env * curenv, uint32 fault_va)
 	// your code is here, remove the panic and write your code
 	panic("__page_fault_handler_with_buffering() is not implemented yet...!!");
 }
-
