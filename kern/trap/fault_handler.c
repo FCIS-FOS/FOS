@@ -229,22 +229,30 @@ void page_fault_handler(struct Env *faulted_env, uint32 fault_va) {
     int iWS = faulted_env->page_last_WS_index;
     uint32 wsSize = env_page_ws_get_size(faulted_env);
 #endif
-		uint32 *ptr_pages = NULL;
-		struct FrameInfo *ptr_frame_info =get_frame_info(faulted_env->env_page_directory,fault_va,&ptr_pages);
 
-    if (wsSize < faulted_env->page_WS_max_size) {
+    if (wsSize < faulted_env->page_WS_max_size)
+	 {
+		//cprintf("PLACEMENT=========================WS Size = %d\n", wsSize );
+		//TODO: [PROJECT'24.MS2 - #09] [2] FAULT HANDLER I - Placement
+		// Write your code here, remove the panic and write your code
+		
+		uint32 *ptr_page_table = NULL;
+		struct FrameInfo *ptr_frame_info =get_frame_info(faulted_env->env_page_directory,fault_va,&ptr_page_table);
+		cprintf("Fault VA: 0x%08x, WS Size: %u, WS Max Size: %u\n", fault_va, wsSize, faulted_env->page_WS_max_size);
 
 		allocate_frame(&ptr_frame_info);
-		int ret = pf_read_env_page(faulted_env,(int*)fault_va); 
+		int ret = pf_read_env_page(faulted_env,(uint32*)fault_va); 
 		map_frame(faulted_env->env_page_directory,ptr_frame_info,fault_va,PERM_USER | PERM_WRITEABLE | PERM_PRESENT);
 
 		if (ret == E_PAGE_NOT_EXIST_IN_PF) { 
-			if (!((fault_va >= USER_HEAP_MAX && fault_va <= USTACKTOP) || (fault_va >= USER_HEAP_START && fault_va <= USER_HEAP_MAX)))
+			if (!((fault_va >= USTACKBOTTOM && fault_va <= USTACKTOP) || (fault_va >= USER_HEAP_START && fault_va <= USER_HEAP_MAX)))
 			env_exit();
 		}
 		// Initialize new ws element
-		env_page_ws_list_create_element(faulted_env,fault_va);
-		faulted_env->page_last_WS_index = (faulted_env->page_last_WS_index + 1) % faulted_env->page_WS_max_size;
+	if (!env_page_ws_list_create_element(faulted_env, fault_va) ) {
+		panic("Failed to create WS element for fault_va 0x%08x\n", fault_va);
+	}
+	faulted_env->page_last_WS_index = (faulted_env->page_last_WS_index + 1) % faulted_env->page_WS_max_size;
 		
 	
 	}
