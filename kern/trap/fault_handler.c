@@ -11,6 +11,7 @@
 #include <kern/cpu/cpu.h>
 #include <kern/disk/pagefile_manager.h>
 #include <kern/mem/memory_manager.h>
+
 //2014 Test Free(): Set it to bypass the PAGE FAULT on an instruction with this length and continue executing the next one
 // 0 means don't bypass the PAGE FAULT
 uint8 bypassInstrLength = 0;
@@ -150,15 +151,12 @@ void fault_handler(struct Trapframe *tf)
 			//TODO: [PROJECT'24.MS2 - #08] [2] FAULT HANDLER I - Check for invalid pointers
 			//(e.g. pointing to unmarked user heap page, kernel or wrong access rights),
 			//your code is here
-			uint32 tu=(fault_va&PERM_PRESENT);
-            uint32 go=(fault_va&PERM_WRITEABLE);
-            int per=pt_get_page_permissions(faulted_env->env_page_directory, fault_va);
-            if(fault_va >=(uint32)USER_LIMIT)
-             env_exit();
-            if((per & PERM_PRESENT) == PERM_PRESENT &&!((per & PERM_WRITEABLE) == PERM_WRITEABLE))
-                env_exit();
-            if(fault_va>=USER_HEAP_START&&fault_va<=USER_HEAP_MAX&&((per & PERM_AVAILABLE)!=0x200||(per & PERM_AVAILABLE)!=0x400||(per & PERM_AVAILABLE)!=0x800))
-               env_exit();
+			bool invaild=1;
+			if((fault_va & PERM_PRESENT) == PERM_PRESENT && fault_va < (uint32)KERNEL_BASE && (fault_va & PERM_WRITEABLE) == PERM_WRITEABLE)
+				invaild=0;
+			
+			if(invaild)
+				env_exit();
 			/*============================================================================================*/
 		}
 
@@ -218,6 +216,7 @@ void table_fault_handler(struct Env * curenv, uint32 fault_va)
 
 //=========================
 // [3] PAGE FAULT HANDLER:
+//=========================
 void page_fault_handler(struct Env *faulted_env, uint32 fault_va) {
 #if USE_KHEAP
     struct WorkingSetElement *victimWSElement = NULL;
@@ -226,44 +225,25 @@ void page_fault_handler(struct Env *faulted_env, uint32 fault_va) {
     int iWS = faulted_env->page_last_WS_index;
     uint32 wsSize = env_page_ws_get_size(faulted_env);
 #endif
-
-    uint32 *ptr_pages = NULL;
-    struct FrameInfo *ptr_frame_info = get_frame_info(faulted_env->env_page_directory, fault_va, &ptr_pages);
+		uint32 *ptr_pages = NULL;
+		struct FrameInfo *ptr_frame_info =get_frame_info(faulted_env->env_page_directory,fault_va,&ptr_pages);
 
     if (wsSize < faulted_env->page_WS_max_size) {
-        allocate_frame(&ptr_frame_info);
-        int ret = pf_read_env_page(faulted_env, (int *)fault_va);
-        map_frame(faulted_env->env_page_directory, ptr_frame_info, fault_va, PERM_USER | PERM_WRITEABLE | PERM_PRESENT);
 
-        if (ret == E_PAGE_NOT_EXIST_IN_PF) {
-            if (!((fault_va >= USER_HEAP_MAX && fault_va <= USTACKTOP) || 
-                  (fault_va >= USER_HEAP_START && fault_va <= USER_HEAP_MAX)))
-                env_exit();
-        }
+		allocate_frame(&ptr_frame_info);
+		int ret = pf_read_env_page(faulted_env,(int*)fault_va); 
+		map_frame(faulted_env->env_page_directory,ptr_frame_info,fault_va,PERM_USER | PERM_WRITEABLE | PERM_PRESENT);
 
-        env_page_ws_list_create_element(faulted_env, fault_va);
-        faulted_env->page_last_WS_index = (faulted_env->page_last_WS_index + 1) % faulted_env->page_WS_max_size;
-    }
-
-    uint32 permissions = pt_get_page_permissions(faulted_env->env_page_directory, fault_va);
-    cprintf("Page permissions: 0x%x\n", permissions);
-
-    if (fault_va >= (uint32)USER_LIMIT)
-        env_exit();
-
-    if ((permissions & PERM_PRESENT) && !(permissions & PERM_WRITEABLE)) {
-        cprintf("Write attempt on a read-only page: 0x%x\n", fault_va);
-        env_exit();
-    }
-
-    if (fault_va >= USER_HEAP_START && fault_va <= USER_HEAP_MAX) {
-        if (!(permissions & PERM_USER) || !(permissions & PERM_WRITEABLE) || !(permissions & PERM_PRESENT)) {
-            cprintf("Invalid permissions for heap access at VA: 0x%x\n", fault_va);
-            env_exit();
-        }
-    }
-
-    
+		if (ret == E_PAGE_NOT_EXIST_IN_PF) { 
+			if (!((fault_va >= USER_HEAP_MAX && fault_va <= USTACKTOP) || (fault_va >= USER_HEAP_START && fault_va <= USER_HEAP_MAX)))
+			env_exit();
+		}
+		// Initialize new ws element
+		env_page_ws_list_create_element(faulted_env,fault_va);
+		faulted_env->page_last_WS_index = (faulted_env->page_last_WS_index + 1) % faulted_env->page_WS_max_size;
+		
+	
+	}
 	else
 	{
 		//cprintf("REPLACEMENT=========================WS Size = %d\n", wsSize );
