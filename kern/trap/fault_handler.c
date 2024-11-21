@@ -258,7 +258,7 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 		faulted_env->page_last_WS_element = NULL;
 
 		if(LIST_SIZE(&(faulted_env->page_WS_list)) == faulted_env->page_WS_max_size)
-			faulted_env->page_last_WS_element = faulted_env->page_WS_list.lh_first;
+			faulted_env->page_last_WS_element = LIST_FIRST(&(faulted_env->page_WS_list));
 		
 	}
 	else
