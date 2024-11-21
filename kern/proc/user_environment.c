@@ -873,19 +873,13 @@ void* create_user_kern_stack(uint32* ptr_user_page_directory)
 	//remember to leave its bottom page as a GUARD PAGE (i.e. not mapped)
 	//return a pointer to the start of the allocated space (including the GUARD PAGE)
 	//On failure: panic
-	struct FrameInfo *frame;
-	int number_of_frames=KERNEL_STACK_SIZE/PAGE_SIZE;
-	uint32 user_kernel_stack=(uint32)UINT_MAX;
-	bool normal_page=1;
-    for(int i=1;i<=number_of_frames;i++){
-		if(i==number_of_frames)//guard area
-			normal_page=0;
-		allocate_frame(&frame);
-		map_frame(ptr_user_page_directory,frame,user_kernel_stack-(i*PAGE_SIZE),(PERM_PRESENT&normal_page)|PERM_WRITEABLE);	    		
-	}
-	void* stack_pointer=(void *)(user_kernel_stack-KERNEL_STACK_SIZE+PAGE_SIZE);
-	return stack_pointer;
-
+	uint32 *va=(uint32*)kmalloc(KERNEL_STACK_SIZE);
+	if(va==NULL)
+	 panic("no momery space");
+    uint32 guard=(uint32)va;
+	pt_set_page_permissions(ptr_user_page_directory,guard,0,PERM_PRESENT);
+	pt_set_page_permissions(ptr_user_page_directory,guard,0,PERM_WRITEABLE);
+    return (void *)(guard);
 #else
 	if (KERNEL_HEAP_MAX - __cur_k_stk < KERNEL_STACK_SIZE)
 		panic("Run out of kernel heap!! Unable to create a kernel stack for the process. Can't create more processes!");

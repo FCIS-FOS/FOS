@@ -22,6 +22,8 @@ inline struct WorkingSetElement* env_page_ws_list_create_element(struct Env* e, 
 	//panic("env_page_ws_list_create_element is not implemented yet");
 	//Your Code is Here...
     struct WorkingSetElement *new_element=(struct WorkingSetElement*)kmalloc(sizeof(struct WorkingSetElement));
+	if(new_element==NULL)
+		panic("not memory space");
 	new_element->virtual_address=(unsigned int)virtual_address;
 	return new_element;
 }
