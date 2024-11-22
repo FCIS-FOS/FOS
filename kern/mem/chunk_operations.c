@@ -165,6 +165,59 @@ void allocate_user_mem(struct Env* e, uint32 virtual_address, uint32 size)
 //=====================================
 // 2) FREE USER MEMORY:
 //=====================================
+void env_page_ws_invalidate_very_fast_boi(struct Env* e, uint32 virtual_address)
+{
+	uint32 *ptr_page_table;
+	struct FrameInfo* ptr_frame_info=get_frame_info(e->env_page_directory,virtual_address,&ptr_page_table);
+	struct WorkingSetElement* ptr_WS_element=ptr_frame_info->wse;
+	if (isPageReplacmentAlgorithmLRU(PG_REP_LRU_LISTS_APPROX))
+	{
+		if(ROUNDDOWN(ptr_WS_element->virtual_address,PAGE_SIZE) == ROUNDDOWN(virtual_address,PAGE_SIZE))
+		{
+			if(ptr_WS_element->in_which_list==IN_ACTIVE_LIST){
+
+				struct WorkingSetElement* ptr_tmp_WS_element = LIST_FIRST(&(e->SecondList));
+				unmap_frame(e->env_page_directory, ptr_WS_element->virtual_address);
+
+				LIST_REMOVE(&(e->ActiveList), ptr_WS_element);
+
+				/*EDIT*/kfree(ptr_WS_element);
+
+				if(ptr_tmp_WS_element != NULL)
+				{
+					LIST_REMOVE(&(e->SecondList), ptr_tmp_WS_element);
+					LIST_INSERT_TAIL(&(e->ActiveList), ptr_tmp_WS_element);
+					pt_set_page_permissions(e->env_page_directory, ptr_tmp_WS_element->virtual_address, PERM_PRESENT, 0);
+				}
+			}
+			else if(ptr_WS_element->in_which_list==IN_SECOND_LIST){
+				unmap_frame(e->env_page_directory, ptr_WS_element->virtual_address);
+				LIST_REMOVE(&(e->SecondList), ptr_WS_element);
+
+				kfree(ptr_WS_element);
+			}
+		}
+	}
+	else if (ptr_WS_element->in_which_list==IN_PAGE_WS_LIST)
+	{
+		if(ROUNDDOWN(ptr_WS_element->virtual_address,PAGE_SIZE) == ROUNDDOWN(virtual_address,PAGE_SIZE))
+		{
+			unmap_frame(e->env_page_directory, ptr_WS_element->virtual_address);
+
+			if (e->page_last_WS_element == ptr_WS_element)
+			{
+				e->page_last_WS_element = LIST_NEXT(ptr_WS_element);
+			}
+			LIST_REMOVE(&(e->page_WS_list), ptr_WS_element);
+
+			kfree(ptr_WS_element);
+
+
+		}
+
+	}
+
+}
 void free_user_mem(struct Env* e, uint32 virtual_address, uint32 size)
 {
 	/*====================================*/
@@ -184,9 +237,8 @@ void free_user_mem(struct Env* e, uint32 virtual_address, uint32 size)
 		//free the page from the page file
 		pf_remove_env_page(e,current_page);
 		//remove the page from the working set list
-		env_page_ws_invalidate(e,current_page);
+		env_page_ws_invalidate_very_fast_boi(e,current_page);
 	}
-
 	//TODO: [PROJECT'24.MS2 - BONUS#3] [3] USER HEAP [KERNEL SIDE] - O(1) free_user_mem
 }
 

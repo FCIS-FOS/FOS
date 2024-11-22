@@ -57,9 +57,13 @@ LIST_HEAD(Env_list, Env);		// Declares 'struct Env_list'
 
 uint32 old_pf_counter;
 //uint32 mydblchk;
+#define IN_PAGE_WS_LIST 0
+#define IN_ACTIVE_LIST 1
+#define IN_SECOND_LIST 2
 struct WorkingSetElement {
 	unsigned int virtual_address;
 	uint8 empty;
+	uint8 in_which_list;
 	//2012
 	unsigned int time_stamp ;
 

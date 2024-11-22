@@ -212,13 +212,15 @@ struct FrameInfo {
 	// boot_allocate_space do not have valid reference count fields.
 	uint16 references;
 
-	// these two help in Kfree and kheap_virtual_address
+	// these two help in Kfree
 	uint32 allocStart;
 	uint32 allocSize;
 
-
+	//this helps with free_user_mem
+	struct WorkingSetElement* wse;
 	struct Env *proc;
 	uint32 bufferedVA;
+	// this helps with kheap_virtual_address
 	uint32 mappedVA;
 	unsigned char isBuffered;
 };

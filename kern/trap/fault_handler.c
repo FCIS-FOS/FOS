@@ -253,6 +253,7 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 
 		// Initialize new ws element
 		struct WorkingSetElement* new_element = env_page_ws_list_create_element(faulted_env, fault_va) ;
+		new_element->in_which_list=IN_PAGE_WS_LIST;
 		LIST_INSERT_TAIL(&(faulted_env->page_WS_list),new_element);
 		
 		faulted_env->page_last_WS_element = NULL;

@@ -1595,7 +1595,44 @@ void test_realloc_block_FF_COMPLETE()
 	else{
 		cprintf("you failed the fifth test \n");
 	}
-	cprintf("You passed %d out of 5 test cases\n",eval);
+
+
+	cprintf("\nsixth test: reallocating with a smaller size when the next block is free, merging with deallocated space\n");
+    initialize_dynamic_allocator(KERNEL_HEAP_START, initAllocatedSpace);
+
+    firstBlock = alloc_block(300, DA_FF);
+    startFirstBlockVA = (int *)firstBlock;
+    *startFirstBlockVA = 12;
+    startFirstBlockVA++;
+    *startFirstBlockVA = 14;
+
+    secondBlock = alloc_block(200, DA_FF);
+
+    free_block(secondBlock);
+
+    va = realloc_block_FF(firstBlock, 200);
+
+    uint32 expectedSize = 200 + 8;
+    expectedVA = firstBlock;
+    startFirstBlockVA = va;
+
+    is_correct = check_block(va, expectedVA, expectedSize, 1) &&*startFirstBlockVA == 12 && *(startFirstBlockVA + 1) == 14;
+
+    if (is_correct) {
+        cprintf("\nyou passed the sixth test \n");
+        eval ++;
+    } else {
+        cprintf("\nyou failed the sixth test \n");
+    }
+
+    int mergedBlockSize = get_block_size(secondBlock - 100);
+    if (mergedBlockSize >= 300) {
+        cprintf("\nThe blocks merged correctly, new size: %d \n", mergedBlockSize);
+        print_blocks_list(freeBlocksList);
+    } else {
+        cprintf("\nThe merged block size is incorrect, expected at least 300 but got: %d \n", mergedBlockSize);
+    }
+	cprintf("You passed %d out of 6 test cases\n",eval);
 	
 }
 

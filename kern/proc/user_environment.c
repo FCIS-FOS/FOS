@@ -345,6 +345,7 @@ struct Env* env_create(char* user_program_name, unsigned int page_WS_size, unsig
 			{
 #if USE_KHEAP
 				wse = env_page_ws_list_create_element(e, (uint32) stackVa);
+				wse->in_which_list=IN_PAGE_WS_LIST;
 				LIST_INSERT_TAIL(&(e->page_WS_list), wse);
 				if (LIST_SIZE(&(e->page_WS_list)) == e->page_WS_max_size)
 				{
@@ -742,6 +743,7 @@ static int program_segment_alloc_map_copy_workingset(struct Env *e, struct Progr
 #if USE_KHEAP
 		struct WorkingSetElement* wse = env_page_ws_list_create_element(e, iVA);
 		wse->time_stamp = 0;
+		wse->in_which_list=IN_PAGE_WS_LIST;
 		LIST_INSERT_TAIL(&(e->page_WS_list), wse);
 
 #else
