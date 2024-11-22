@@ -130,7 +130,7 @@ void* sys_sbrk(int numOfPages)
 	 * NOTES:
 	 * 	1) As in real OS, allocate pages lazily. While sbrk moves the segment break, pages are not allocated
 	 * 		until the user program actually tries to access data in its heap (i.e. will be allocated via the fault handler).
-	 * 	2) Allocating additional pages for a process’ heap will fail if, for example, the free frames are exhausted
+	 * 	2) Allocating additional pages for a processï¿½ heap will fail if, for example, the free frames are exhausted
 	 * 		or the break exceed the limit of the dynamic allocator. If sys_sbrk fails, the net effect should
 	 * 		be that sys_sbrk returns (void*) -1 and that the segment break and the process heap are unaffected.
 	 * 		You might have to undo any operations you have done so far in this case.
@@ -139,10 +139,48 @@ void* sys_sbrk(int numOfPages)
 	//TODO: [PROJECT'24.MS2 - #11] [3] USER HEAP - sys_sbrk
 	/*====================================*/
 	/*Remove this line before start coding*/
-	return (void*)-1 ;
+	//return (void*)-1 ;
 	/*====================================*/
 	struct Env* env = get_cpu_proc(); //the current running Environment to adjust its break limit
 
+	// numOfPages = 0 -> return current Env brk
+	if(numOfPages == 0)
+		return (void*)env->uheap_brk;
+
+	// numOfPages > 0 -> follow the logic discussed above
+
+	uint32 increment = (numOfPages * PAGE_SIZE);
+	uint32 env_old_brk = env->uheap_brk;
+	uint32 env_new_brk = env->uheap_brk + increment;
+
+	// env's new break exceed the hard limit or the free frames is depleted
+	if(env_new_brk > env->uheap_limit || numOfPages > LIST_SIZE(&MemFrameLists.free_frame_list))
+	{
+		return (void*)-1;
+	}
+
+	// **WE ARE WITHIN THE HARD LIMIT AND HAVE FREE FRAMES**
+
+	// setting current endblock to zero
+	uint32* old_endBlock = (uint32*)(env_old_brk - sizeof(int));
+	*old_endBlock = 0;
+
+	// marking every page for future usage (no allocation done)
+	for(uint32 va = env_old_brk; va < env_new_brk; va += PAGE_SIZE)
+	{
+		pt_set_page_permissions(env->env_page_directory, va, PERM_MARKED, 0);
+	}
+
+
+	// setting the new end block 
+	uint32* new_endBlock = (uint32*)(env_new_brk - sizeof(int));
+	*new_endBlock = 1;
+
+	// setting env's new brk
+	env->uheap_brk = env_new_brk;
+
+	// returning env's old brk
+	return (uint32*)env_old_brk;
 
 }
 
