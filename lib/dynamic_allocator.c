@@ -222,47 +222,8 @@ void *alloc_block_FF(uint32 size)
 
 	uint32* va = (uint32*)ret;
 
-	//free_block(va);
-
-	struct BlockElement* leftAdr;
-	bool isLeftFree;
-	uint32 leftSize;
-	uint32* leftMeta = (uint32*)va - 2;
-	//current block is first block in heap
-
-	leftSize = *leftMeta & (UINT_MAX-1);
-	isLeftFree = (~(*leftMeta) & 0x1);
-	leftAdr = (struct BlockElement*) ((uint32)va - leftSize);
-
-	struct BlockElement* anchorBlock;
-	if(isLeftFree){
-		anchorBlock = leftAdr;
-		LIST_REMOVE(&freeBlocksList, leftAdr);
-
-		//coalecing required block
-		set_block_data(anchorBlock, get_block_size(va)+leftSize, 0);
-
-		//linked list manipulation
-		struct BlockElement* prev = NULL;
-		struct BlockElement*  it = NULL;
-
-		LIST_FOREACH(it, &freeBlocksList){
-		if((uint32)it > (uint32)anchorBlock){
-			break;
-		}
-		prev = it;
-	}
-
-		if(prev == NULL){
-			LIST_INSERT_HEAD(&freeBlocksList, anchorBlock);
-		}else{
-			LIST_INSERT_AFTER(&freeBlocksList, prev,anchorBlock);
-		}
-
-
-
-	}
-
+	// calling free block for coalecing if possible
+	free_block(va);
 
 	return alloc_block_FF(size);
 
