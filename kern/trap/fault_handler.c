@@ -164,6 +164,10 @@ void fault_handler(struct Trapframe *tf)
             if(fault_va>=USER_HEAP_START&&fault_va<=USER_HEAP_MAX&&((per & PERM_MARKED)!=PERM_MARKED)){
                env_exit();
 			}
+			if((per & PERM_PRESENT) == PERM_PRESENT&&!((per & PERM_USER) == PERM_USER))
+			{	
+				env_exit();
+			}///////
 			/*============================================================================================*/
 		}
 
@@ -243,9 +247,6 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 		struct FrameInfo *ptr_frame_info =get_frame_info(faulted_env->env_page_directory,fault_va,&ptr_page_table);
 		
 
-		allocate_frame(&ptr_frame_info);
-		map_frame(faulted_env->env_page_directory,ptr_frame_info,fault_va,PERM_USER | PERM_WRITEABLE | PERM_PRESENT);
-
 		int ret = pf_read_env_page(faulted_env,(uint32*)fault_va); 
 
 		if (ret == E_PAGE_NOT_EXIST_IN_PF) 
@@ -253,6 +254,9 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 			if (!((fault_va >= USTACKBOTTOM && fault_va <= USTACKTOP) || (fault_va >= USER_HEAP_START && fault_va <= USER_HEAP_MAX)))
 			env_exit();
 		}
+
+		allocate_frame(&ptr_frame_info);
+		map_frame(faulted_env->env_page_directory,ptr_frame_info,fault_va,PERM_USER | PERM_WRITEABLE | PERM_PRESENT);
 
 		// Initialize new ws element
 		struct WorkingSetElement* new_element = env_page_ws_list_create_element(faulted_env, fault_va) ;
