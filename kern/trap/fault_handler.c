@@ -155,12 +155,15 @@ void fault_handler(struct Trapframe *tf)
             uint32 go=(fault_va&PERM_WRITEABLE);
             int per=pt_get_page_permissions(faulted_env->env_page_directory, fault_va);
             //cprintf("%d ",per);
-            if(fault_va >=(uint32)USER_LIMIT)
-             env_exit();
-            if((per & PERM_PRESENT) == PERM_PRESENT &&!((per & PERM_WRITEABLE) == PERM_WRITEABLE))
+            if(fault_va >=(uint32)USER_LIMIT){
+				env_exit();
+			}
+            if((per & PERM_PRESENT) == PERM_PRESENT &&!((per & PERM_WRITEABLE) == PERM_WRITEABLE)){
                 env_exit();
-            if(fault_va>=USER_HEAP_START&&fault_va<=USER_HEAP_MAX&&((per & PERM_AVAILABLE)!=0x200||(per & PERM_AVAILABLE)!=0x400||(per & PERM_AVAILABLE)!=0x800))
+			}
+            if(fault_va>=USER_HEAP_START&&fault_va<=USER_HEAP_MAX&&((per & PERM_MARKED)!=PERM_MARKED)){
                env_exit();
+			}
 			/*============================================================================================*/
 		}
 
@@ -254,11 +257,11 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 		// Initialize new ws element
 		struct WorkingSetElement* new_element = env_page_ws_list_create_element(faulted_env, fault_va) ;
 		LIST_INSERT_TAIL(&(faulted_env->page_WS_list),new_element);
-		
 		faulted_env->page_last_WS_element = NULL;
 
-		if(LIST_SIZE(&(faulted_env->page_WS_list)) == faulted_env->page_WS_max_size)
-			faulted_env->page_last_WS_element = LIST_FIRST(&(faulted_env->page_WS_list));
+		if(LIST_SIZE(&(faulted_env->page_WS_list)) == faulted_env->page_WS_max_size){
+			faulted_env->page_last_WS_element = faulted_env->page_WS_list.lh_first;
+		}
 		
 	}
 	else

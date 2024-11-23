@@ -66,9 +66,7 @@ void _main(void)
 			for (int j = 0; j < allocCntPerSize; ++j)
 			{
 				actualSize = allocSizes[i] - sizeOfMetaData;
-				cprintf("hello");
 				va = startVAs[idx] = malloc(actualSize);
-				cprintf("this is for testing %p \t %d\n",va,va);
 				midVAs[idx] = va + actualSize/2 ;
 				endVAs[idx] = va + actualSize - sizeof(short);
 				//Check returned va

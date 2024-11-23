@@ -185,7 +185,6 @@ void* sys_sbrk(int numOfPages)
 
 	// setting env's new brk
 	env->uheap_brk = env_new_brk;
-	cprintf("new break: %p\n",env->uheap_brk);
 	// returning env's old brk
 	return (uint32*)env_old_brk;
 
@@ -206,7 +205,8 @@ void allocate_user_mem(struct Env* e, uint32 virtual_address, uint32 size)
 	// Write your code here, remove the panic and write your code
 	// panic("allocate_user_mem() is not implemented yet...!!");
 	uint32 virtual_address_round_down=ROUNDDOWN(virtual_address,PAGE_SIZE);
-	uint32 num_of_pages=ROUNDUP(size/PAGE_SIZE,PAGE_SIZE);
+	uint32 num_of_pages=ROUNDUP(size,PAGE_SIZE)/PAGE_SIZE;
+	uint32 nun_of_tables=0;
 	for(uint32 current_page=virtual_address_round_down;
 	current_page<virtual_address_round_down+(num_of_pages*PAGE_SIZE);
 	current_page+=PAGE_SIZE)
@@ -214,10 +214,10 @@ void allocate_user_mem(struct Env* e, uint32 virtual_address, uint32 size)
 		uint32 *ptr_page_table=NULL;
 		if(get_page_table(e->env_page_directory,current_page,&ptr_page_table)==TABLE_NOT_EXIST){
 			ptr_page_table=create_page_table(e->env_page_directory,current_page);
+			nun_of_tables++;
 		}
 		pt_set_page_permissions(e->env_page_directory,current_page,PERM_MARKED,0);
 	}
-
 }
 
 //=====================================
