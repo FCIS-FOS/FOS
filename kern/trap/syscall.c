@@ -320,6 +320,10 @@ void sys_free_user_mem(uint32 virtual_address, uint32 size)
 	return;
 }
 uint32 sys_is_page_marked(uint32 virtual_address){
+	if((uint32 *)virtual_address==NULL)
+			env_exit();
+		if(virtual_address<USER_HEAP_START || virtual_address >USER_HEAP_MAX )
+			env_exit();
 	return is_page_marked(cur_env,virtual_address);
 }
 void sys_allocate_user_mem(uint32 virtual_address, uint32 size)

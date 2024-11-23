@@ -310,8 +310,8 @@ void sys_free_user_mem(uint32 virtual_address, uint32 size)
 	//panic("not implemented yet");
 	syscall(SYS_free_user_mem, virtual_address, size, 0, 0, 0);
 }
-void sys_is_page_marked(uint32 virtual_address){
-	syscall(SYS_is_page_marked,virtual_address,0,0,0,0);
+uint32 sys_is_page_marked(uint32 virtual_address){
+	return syscall(SYS_is_page_marked,virtual_address,0,0,0,0);
 }
 void sys_allocate_user_mem(uint32 virtual_address, uint32 size)
 {
