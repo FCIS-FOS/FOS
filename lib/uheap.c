@@ -24,7 +24,12 @@ void* malloc(uint32 size)
 	//==============================================================
 	//TODO: [PROJECT'24.MS2 - #12] [3] USER HEAP [USER SIDE] - malloc()
 	// Write your code here, remove the panic and write your code
-	panic("malloc() is not implemented yet...!!");
+	// panic("malloc() is not implemented yet...!!");
+	if(size<=DYN_ALLOC_MAX_BLOCK_SIZE){
+		return alloc_block_FF(size);
+	}
+	uint32 start_page_allocator=myEnv->uheap_limit+PAGE_SIZE;
+	uint32 num_of_pages=ROUNDUP(size/PAGE_SIZE,PAGE_SIZE);
 	return NULL;
 	//Use sys_isUHeapPlacementStrategyFIRSTFIT() and	sys_isUHeapPlacementStrategyBESTFIT()
 	//to check the current strategy

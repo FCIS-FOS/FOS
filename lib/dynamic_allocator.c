@@ -169,6 +169,7 @@ void *alloc_block_FF(uint32 size)
 			uint32 da_start = (uint32)sbrk(ROUNDUP(required_size, PAGE_SIZE)/PAGE_SIZE);
 			uint32 da_break = (uint32)sbrk(0);
 			initialize_dynamic_allocator(da_start, da_break - da_start);
+			cprintf("dyn initialized\n");
 		}
 	}
 	//==================================================================================

@@ -116,7 +116,11 @@ uint32 calculate_required_frames(uint32* page_directory, uint32 sva, uint32 size
 //======================================================
 /// functions used for USER HEAP (malloc, free, ...)
 //======================================================
-
+uint32 is_page_marked(struct Env* e,uint32 virtual_address){
+	uint32 * ptr_page_table=NULL;
+	return get_page_table(e->env_page_directory,virtual_address,&ptr_page_table)==TABLE_IN_MEMORY
+	&& (pt_get_page_permissions(e->env_page_directory,virtual_address) & PERM_MARKED) == PERM_MARKED;
+}
 //=====================================
 /* DYNAMIC ALLOCATOR SYSTEM CALLS */
 //=====================================
@@ -141,8 +145,8 @@ void* sys_sbrk(int numOfPages)
 	/*Remove this line before start coding*/
 	//return (void*)-1 ;
 	/*====================================*/
-	struct Env* env = get_cpu_proc(); //the current running Environment to adjust its break limit
 
+	struct Env* env = get_cpu_proc(); //the current running Environment to adjust its break limit
 	// numOfPages = 0 -> return current Env brk
 	if(numOfPages == 0)
 		return (void*)env->uheap_brk;
@@ -158,27 +162,30 @@ void* sys_sbrk(int numOfPages)
 	{
 		return (void*)-1;
 	}
-
 	// **WE ARE WITHIN THE HARD LIMIT AND HAVE FREE FRAMES**
 
 	// setting current endblock to zero
-	uint32* old_endBlock = (uint32*)(env_old_brk - sizeof(int));
-	*old_endBlock = 0;
 
+	//uint32* old_endBlock = (uint32*)(env_old_brk - sizeof(int));
+	// cprintf("%p \t %d\n",old_endBlock,*old_endBlock);
+
+	// *old_endBlock = 0;
 	// marking every page for future usage (no allocation done)
-	for(uint32 va = env_old_brk; va < env_new_brk; va += PAGE_SIZE)
-	{
-		pt_set_page_permissions(env->env_page_directory, va, PERM_MARKED, 0);
-	}
-
+	// for(uint32 va = env_old_brk; va < env_new_brk; va += PAGE_SIZE)
+	// {
+		
+	// 	pt_set_page_permissions(env->env_page_directory, va, PERM_MARKED, 0);
+	// 	cprintf("im here\n");	
+	// }
+	allocate_user_mem(env,env_old_brk,env_new_brk-env_old_brk);
 
 	// setting the new end block 
-	uint32* new_endBlock = (uint32*)(env_new_brk - sizeof(int));
-	*new_endBlock = 1;
+	// uint32* new_endBlock = (uint32*)(env_new_brk - sizeof(int));
+	// *new_endBlock = 1;
 
 	// setting env's new brk
 	env->uheap_brk = env_new_brk;
-
+	cprintf("new break: %p\n",env->uheap_brk);
 	// returning env's old brk
 	return (uint32*)env_old_brk;
 
@@ -197,7 +204,20 @@ void allocate_user_mem(struct Env* e, uint32 virtual_address, uint32 size)
 
 	//TODO: [PROJECT'24.MS2 - #13] [3] USER HEAP [KERNEL SIDE] - allocate_user_mem()
 	// Write your code here, remove the panic and write your code
-	panic("allocate_user_mem() is not implemented yet...!!");
+	// panic("allocate_user_mem() is not implemented yet...!!");
+	uint32 virtual_address_round_down=ROUNDDOWN(virtual_address,PAGE_SIZE);
+	uint32 num_of_pages=ROUNDUP(size/PAGE_SIZE,PAGE_SIZE);
+	for(uint32 current_page=virtual_address_round_down;
+	current_page<virtual_address_round_down+(num_of_pages*PAGE_SIZE);
+	current_page+=PAGE_SIZE)
+	{
+		uint32 *ptr_page_table=NULL;
+		if(get_page_table(e->env_page_directory,current_page,&ptr_page_table)==TABLE_NOT_EXIST){
+			ptr_page_table=create_page_table(e->env_page_directory,current_page);
+		}
+		pt_set_page_permissions(e->env_page_directory,current_page,PERM_MARKED,0);
+	}
+
 }
 
 //=====================================
