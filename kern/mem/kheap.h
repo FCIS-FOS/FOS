@@ -6,7 +6,7 @@
 #endif
 
 #include <inc/types.h>
-
+#include <inc/queue.h>
 
 /*2017*/
 uint32 _KHeapPlacementStrategy;
@@ -30,6 +30,14 @@ static inline uint8 isKHeapPlacementStrategyNEXTFIT(){if(_KHeapPlacementStrategy
 static inline uint8 isKHeapPlacementStrategyWORSTFIT(){if(_KHeapPlacementStrategy == KHP_PLACE_WORSTFIT) return 1; return 0;}
 
 //***********************************
+struct PageElement{
+    uint32 start;
+    uint32 size;
+    LIST_ENTRY(PageElement) prev_next_info;
+};
+
+LIST_HEAD(FreePage_LIST, PageElement);
+struct FreePage_LIST freePageList ;
 
 void* kmalloc(unsigned int size);
 void kfree(void* virtual_address);

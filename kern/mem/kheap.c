@@ -10,6 +10,8 @@
 //Return:
 //	On success: 0
 //	Otherwise (if no memory OR initial size exceed the given limit): PANIC
+struct PageElement freePage;
+struct PageElement *freePage2=&freePage;
 int initialize_kheap_dynamic_allocator(uint32 daStart, uint32 initSizeToAllocate, uint32 daLimit)
 {
 	//TODO: [PROJECT'24.MS2 - #01] [1] KERNEL HEAP - initialize_kheap_dynamic_allocator
@@ -34,7 +36,10 @@ int initialize_kheap_dynamic_allocator(uint32 daStart, uint32 initSizeToAllocate
 		va+=PAGE_SIZE;
 	}
 	initialize_dynamic_allocator(daStart,initSizeToAllocate);
-
+	freePage2->start = (limit+PAGE_SIZE);
+	freePage2->size=((uint32)KERNEL_HEAP_MAX-(limit+PAGE_SIZE))/PAGE_SIZE;
+    LIST_INIT(&freePageList);
+	LIST_INSERT_HEAD(&freePageList,freePage2);
 
 	//initilize page table entires
 	for(uint32 curPage = limit + PAGE_SIZE; curPage < KERNEL_HEAP_MAX; curPage+=PAGE_SIZE){
@@ -174,7 +179,30 @@ void* kmalloc(unsigned int size)
 
 
 	uint32 currentPage = HARD_LIMIT + PAGE_SIZE;
-	while(currentPage < KERNEL_HEAP_MAX){
+	uint32 loop =LIST_SIZE(&freePageList);
+	struct PageElement* va;
+	//LIST_FOREACH(va,&freePageList){
+	 //cprintf("%x  %d\n",va->start,va->size);
+	//}
+	//cprintf(" size=%d\n",LIST_SIZE(&freePageList));
+	LIST_FOREACH(va,&freePageList){
+       if(va->size>=requiredPages)
+	    {
+			
+			allocStart = (va->start);
+			//cprintf("allocstart = %x \n",allocStart);
+			if(va->size==requiredPages){
+			 LIST_REMOVE(&freePageList,va);
+			 pages=requiredPages;
+			 break;
+			}
+			va->start+=(requiredPages*PAGE_SIZE);
+			va->size-=requiredPages;
+			pages=requiredPages;
+			break;
+		}
+	}
+	/*while(loop--){
 		if(pages == requiredPages){
 			break;
 		}
@@ -191,24 +219,29 @@ void* kmalloc(unsigned int size)
 				pages = 0;
 			}
 		}
+	    
 
-	}
+	}*/
 
 	if(pages!=requiredPages){
 		return NULL;
 	}else{
 		uint32 addr = allocStart;
+		//cprintf("\n%x\n",allocStart);
+		//cprintf("222222");
 		for(int i = 0; i<requiredPages; i++){
+			
 			struct FrameInfo *frame;
 			int allocRet = allocate_frame(&frame);
 			if(allocRet == E_NO_MEM){
 				return NULL;
 			}
-
+           // cprintf("\n%x\n",addr);
 			int mapRet = map_frame(ptr_page_directory, frame, addr, PERM_WRITEABLE|PERM_PRESENT);
 			if(mapRet == E_NO_MEM){
 				return NULL;
 			}
+			//cprintf("ffffffffff");
 			//store the info that is needed for Kfree and kheap_virtual_address
 			frame->allocStart=allocStart;
 			frame->allocSize=requiredPages;
@@ -219,6 +252,8 @@ void* kmalloc(unsigned int size)
 			addr += PAGE_SIZE;
 		}
 	}
+    //cprintf(" allocstart:%x ",allocStart);
+	
 
 	return (void*)allocStart;
 	// use "isKHeapPlacementStrategyFIRSTFIT() ..." functions to check the current strategy
@@ -252,6 +287,64 @@ void kfree(void* virtual_address)
             frame->mappedVA=0;
             unmap_frame(ptr_page_directory,current);
         }
+		struct PageElement *va;
+		struct  PageElement newpage;
+		struct PageElement *newPageptr=&newpage;
+		newPageptr->start=virtual_address_int;
+		newPageptr->size=allocSize;
+		//cprintf("%d",LIST_SIZE(&freePageList));
+		LIST_FOREACH(va,&freePageList){
+			if(va->prev_next_info.le_prev==NULL&&va->start<virtual_address_int)
+			{
+			    if(va->start+va->size*PAGE_SIZE==virtual_address_int)
+			 		va->size+=allocSize;
+
+				else{
+					LIST_INSERT_HEAD(&freePageList,newPageptr);
+					return;
+				}
+			}
+			else if(va->prev_next_info.le_next==NULL&&va->start>virtual_address_int)
+			{
+				if(va->start==virtual_address_int+allocSize*PAGE_SIZE)
+				{
+					va->start=virtual_address_int;
+					va->size+=allocSize;
+				}
+				else{
+					LIST_INSERT_TAIL(&freePageList,newPageptr);
+					return;
+				}
+			}
+			else if(virtual_address_int>va->start&&virtual_address_int<va->prev_next_info.le_next->start)
+			{
+				if(va->start+va->size*PAGE_SIZE==virtual_address_int)//va +size =start 5ly el start
+				{
+					//va->start=virtual_address_int;
+					va->size+=allocSize;	
+				    if(va->start+va->size*PAGE_SIZE==va->prev_next_info.le_next->start){
+						va->size+=va->prev_next_info.le_next->size;
+					    LIST_REMOVE(&freePageList,va->prev_next_info.le_next);
+					}
+					if(va->start==va->prev_next_info.le_prev->start+va->prev_next_info.le_prev->size*PAGE_SIZE)
+					{
+						va->start=va->prev_next_info.le_prev->start;
+						va->size+=va->prev_next_info.le_prev->size;
+						LIST_REMOVE(&freePageList,va->prev_next_info.le_prev);
+					}
+				}
+	            if((va->start+va->size*PAGE_SIZE)==virtual_address_int)
+					va->size+=allocSize;
+
+				else
+				{
+                   struct PageElement *nextPage=va->prev_next_info.le_next;
+				   LIST_INSERT_BEFORE(&freePageList,nextPage,newPageptr);
+				}
+
+			}
+		}
+
     }
   
 	//Virtual Address is invalid
