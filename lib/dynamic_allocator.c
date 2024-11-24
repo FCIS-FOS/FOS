@@ -156,6 +156,7 @@ void set_block_data(void* va, uint32 totalSize, bool isAllocated)
 //=========================================
 void *alloc_block_FF(uint32 size)
 {
+	
 	//==================================================================================
 	//DON'T CHANGE THESE LINES==========================================================
 	//==================================================================================
@@ -221,7 +222,7 @@ void *alloc_block_FF(uint32 size)
 	}
 
 	uint32* va = (uint32*)ret;
-
+	set_block_data( (void*)va, ROUNDUP(size,PAGE_SIZE), 0);
 	// calling free block for coalecing if possible
 	free_block(va);
 

@@ -126,6 +126,8 @@ uint32 is_page_marked(struct Env* e,uint32 virtual_address){
 //=====================================
 void* sys_sbrk(int numOfPages)
 {
+
+
 	/* numOfPages > 0: move the segment break of the current user program to increase the size of its heap
 	 * 				by the given number of pages. You should allocate NOTHING,
 	 * 				and returns the address of the previous break (i.e. the beginning of newly mapped memory).
@@ -145,8 +147,8 @@ void* sys_sbrk(int numOfPages)
 	/*Remove this line before start coding*/
 	//return (void*)-1 ;
 	/*====================================*/
-
 	struct Env* env = get_cpu_proc(); //the current running Environment to adjust its break limit
+
 	// numOfPages = 0 -> return current Env brk
 	if(numOfPages == 0)
 		return (void*)env->uheap_brk;
@@ -162,29 +164,34 @@ void* sys_sbrk(int numOfPages)
 	{
 		return (void*)-1;
 	}
+
 	// **WE ARE WITHIN THE HARD LIMIT AND HAVE FREE FRAMES**
 
 	// setting current endblock to zero
-
-	//uint32* old_endBlock = (uint32*)(env_old_brk - sizeof(int));
-	// cprintf("%p \t %d\n",old_endBlock,*old_endBlock);
-
+	uint32* old_endBlock = (uint32*)(env_old_brk - sizeof(int));
 	// *old_endBlock = 0;
+
 	// marking every page for future usage (no allocation done)
-	// for(uint32 va = env_old_brk; va < env_new_brk; va += PAGE_SIZE)
-	// {
+	for(uint32 va = env_old_brk; va < env_new_brk; va += PAGE_SIZE)
+	{
+		uint32 *ptr_page_table=NULL;
+		if(get_page_table(env->env_page_directory,va,&ptr_page_table)==TABLE_NOT_EXIST){
+			ptr_page_table=create_page_table(env->env_page_directory,va);
 		
-	// 	pt_set_page_permissions(env->env_page_directory, va, PERM_MARKED, 0);
-	// 	cprintf("im here\n");	
-	// }
-	allocate_user_mem(env,env_old_brk,env_new_brk-env_old_brk);
+		}
+	
+		pt_set_page_permissions(env->env_page_directory, va, PERM_MARKED, 0);
+	}
+
 
 	// setting the new end block 
-	// uint32* new_endBlock = (uint32*)(env_new_brk - sizeof(int));
-	// *new_endBlock = 1;
+	uint32* new_endBlock = (uint32*)(env_new_brk - sizeof(int));
 
-	// setting env's new brk
+	*new_endBlock = 1;
+	
+	
 	env->uheap_brk = env_new_brk;
+
 	// returning env's old brk
 	return (uint32*)env_old_brk;
 
