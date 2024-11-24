@@ -243,8 +243,8 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 		//cprintf("PLACEMENT=========================WS Size = %d\n", wsSize );
 		//TODO: [PROJECT'24.MS2 - #09] [2] FAULT HANDLER I - Placement
 		// Write your code here, remove the panic and write your code
-		uint32 *ptr_page_table = NULL;
-		struct FrameInfo *ptr_frame_info =get_frame_info(faulted_env->env_page_directory,fault_va,&ptr_page_table);
+		// uint32 *ptr_page_table = NULL;
+		struct FrameInfo *ptr_frame_info ;
 		
 
 		int ret = pf_read_env_page(faulted_env,(uint32*)fault_va); 
