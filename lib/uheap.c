@@ -49,7 +49,15 @@ void* malloc(uint32 size)
 	}
 	if(num_of_pages_unmarked==num_of_pages){
 		// page_alloc[(start_virtual_addr-USER_HEAP_START)]
+		
 		sys_allocate_user_mem(start_virtual_addr,size);
+		  for(uint32 current_page=start_virtual_addr;
+        current_page<start_virtual_addr+(num_of_pages*PAGE_SIZE);
+        current_page+=PAGE_SIZE)
+        {
+            page_alloc[(current_page-USER_HEAP_START)/PAGE_SIZE].start_va=start_virtual_addr;
+            page_alloc[(current_page-USER_HEAP_START)/PAGE_SIZE].size=size;
+        }
 		return (void *) start_virtual_addr;
 	}
 	return NULL;

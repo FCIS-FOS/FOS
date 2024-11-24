@@ -217,8 +217,8 @@ void allocate_user_mem(struct Env* e, uint32 virtual_address, uint32 size)
 	current_page<virtual_address_round_down+(num_of_pages*PAGE_SIZE);
 	current_page+=PAGE_SIZE)
 	{
-		page_alloc[(current_page-USER_HEAP_START)/PAGE_SIZE].start_va=virtual_address_round_down;
-		page_alloc[(current_page-USER_HEAP_START)/PAGE_SIZE].size=size;
+		// page_alloc[(current_page-USER_HEAP_START)/PAGE_SIZE].start_va=virtual_address_round_down;
+		// page_alloc[(current_page-USER_HEAP_START)/PAGE_SIZE].size=size;
 
 		uint32 *ptr_page_table=NULL;
 		if(get_page_table(e->env_page_directory,current_page,&ptr_page_table)==TABLE_NOT_EXIST){
@@ -233,18 +233,26 @@ void allocate_user_mem(struct Env* e, uint32 virtual_address, uint32 size)
 //=====================================
 void free_user_mem(struct Env* e, uint32 virtual_address, uint32 size)
 {
-	/*====================================*/
-	/*Remove this line before start coding*/
-//	inctst();
-//	return;
-	/*====================================*/
+    /*====================================*/
+    /*Remove this line before start coding*/
+//    inctst();
+//    return;
+    /*====================================*/
 
-	//TODO: [PROJECT'24.MS2 - #15] [3] USER HEAP [KERNEL SIDE] - free_user_mem
-	// Write your code here, remove the panic and write your code
-	panic("free_user_mem() is not implemented yet...!!");
-
-
-	//TODO: [PROJECT'24.MS2 - BONUS#3] [3] USER HEAP [KERNEL SIDE] - O(1) free_user_mem
+    //TODO: [PROJECT'24.MS2 - #15] [3] USER HEAP [KERNEL SIDE] - free_user_mem
+    // Write your code here, remove the panic and write your code
+    // panic("free_user_mem() is not implemented yet...!!");
+    uint32 va_page_start=ROUNDDOWN(virtual_address,PAGE_SIZE);
+    uint32 num_of_pages= ROUNDUP(size,PAGE_SIZE)/PAGE_SIZE;
+    for(uint32 current_page=va_page_start;current_page<va_page_start+(num_of_pages*PAGE_SIZE);current_page+=PAGE_SIZE){
+        //unmark the page
+        pt_set_page_permissions(e->env_page_directory,current_page,0,PERM_MARKED);
+        //free the page from the page file
+        pf_remove_env_page(e,current_page);
+        //remove the page from the working set list
+        env_page_ws_invalidate(e,current_page);
+    }
+    //TODO: [PROJECT'24.MS2 - BONUS#3] [3] USER HEAP [KERNEL SIDE] - O(1) free_user_mem
 }
 
 //=====================================
