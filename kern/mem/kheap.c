@@ -128,11 +128,9 @@ void* sbrk(int numOfPages)
 	// setting the new brk
 	brk = new_brk;
 
-	// inserting the new allocated memory in the free blocks list
-	struct BlockElement* new_freeBlock = (struct BlockElement*)(old_brk);
+	// creating the new free block
 	set_block_data( (void*)old_brk, increment, 0);
-	LIST_INSERT_TAIL(&freeBlocksList, new_freeBlock);
-
+	
 	// the starting address we can allocate on is the old end block
 	return (uint32*)old_brk;
 
