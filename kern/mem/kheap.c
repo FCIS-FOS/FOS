@@ -290,25 +290,26 @@ void kfree(void* virtual_address)
 		struct PageElement *va;
 		struct  PageElement newpage;
 		struct PageElement *newPageptr=&newpage;
-		newPageptr->start=virtual_address_int;
+		newPageptr->start=allocStart;
 		newPageptr->size=allocSize;
 		//cprintf("%d",LIST_SIZE(&freePageList));
 		LIST_FOREACH(va,&freePageList){
-			if(va->prev_next_info.le_prev==NULL&&va->start<virtual_address_int)
+			if(va->prev_next_info.le_prev==NULL&&va->start>allocStart)
 			{
-			    if(va->start+va->size*PAGE_SIZE==virtual_address_int)
+			    if(va->start==allocStart+(allocSize*PAGE_SIZE)){
 			 		va->size+=allocSize;
+					va->start=allocStart;
+				}
 
 				else{
 					LIST_INSERT_HEAD(&freePageList,newPageptr);
 					return;
 				}
 			}
-			else if(va->prev_next_info.le_next==NULL&&va->start>virtual_address_int)
+			else if(va->prev_next_info.le_next==NULL&&va->start<allocStart)
 			{
-				if(va->start==virtual_address_int+allocSize*PAGE_SIZE)
+				if(va->start+va->size*PAGE_SIZE==allocStart)
 				{
-					va->start=virtual_address_int;
 					va->size+=allocSize;
 				}
 				else{
@@ -316,9 +317,9 @@ void kfree(void* virtual_address)
 					return;
 				}
 			}
-			else if(virtual_address_int>va->start&&virtual_address_int<va->prev_next_info.le_next->start)
+			else if(allocStart>va->start&&allocStart<va->prev_next_info.le_next->start)
 			{
-				if(va->start+va->size*PAGE_SIZE==virtual_address_int)//va +size =start 5ly el start
+				if(va->start+va->size*PAGE_SIZE==allocStart)//va +size =start 5ly el start
 				{
 					//va->start=virtual_address_int;
 					va->size+=allocSize;	
@@ -332,14 +333,13 @@ void kfree(void* virtual_address)
 						va->size+=va->prev_next_info.le_prev->size;
 						LIST_REMOVE(&freePageList,va->prev_next_info.le_prev);
 					}
+					return;
 				}
-	            if((va->start+va->size*PAGE_SIZE)==virtual_address_int)
-					va->size+=allocSize;
-
 				else
 				{
                    struct PageElement *nextPage=va->prev_next_info.le_next;
 				   LIST_INSERT_BEFORE(&freePageList,nextPage,newPageptr);
+				   return;
 				}
 
 			}
