@@ -48,6 +48,7 @@ void* malloc(uint32 size)
 		if(num_of_pages_unmarked==num_of_pages)break;
 	}
 	if(num_of_pages_unmarked==num_of_pages){
+		// page_alloc[(start_virtual_addr-USER_HEAP_START)]
 		sys_allocate_user_mem(start_virtual_addr,size);
 		return (void *) start_virtual_addr;
 	}
@@ -70,8 +71,9 @@ void free(void* virtual_address)
   		free_block((void *)virtual_address);
  	}
  	else if (virtual_addr>=myEnv->uheap_limit+PAGE_SIZE&&virtual_addr<USER_HEAP_MAX){
-			uint32 size;/////////////////// miss calulate from Env
-			sys_free_user_mem(virtual_addr,size);
+			uint32 start=page_alloc[(ROUNDDOWN(virtual_addr,PAGE_SIZE)-USER_HEAP_START)/PAGE_SIZE].start_va;/////////////////// miss calulate from Env
+			uint32 size=page_alloc[(ROUNDDOWN(virtual_addr,PAGE_SIZE)-USER_HEAP_START)/PAGE_SIZE].size;
+			sys_free_user_mem(start,size);
 			
  	}
  	else panic("Invalid Address");
