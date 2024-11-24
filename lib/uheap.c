@@ -62,9 +62,22 @@ void* malloc(uint32 size)
 //=================================
 void free(void* virtual_address)
 {
-	//TODO: [PROJECT'24.MS2 - #14] [3] USER HEAP [USER SIDE] - free()
-	// Write your code here, remove the panic and write your code
-	panic("free() is not implemented yet...!!");
+	 //TODO: [PROJECT'24.MS2 - #14] [3] USER HEAP [USER SIDE] - free()
+ 	// Write your code here, remove the panic and write your code
+ 	//panic("free() is not implemented yet...!!");
+	uint32 virtual_addr=(uint32)virtual_address;
+	if (virtual_addr>=USER_HEAP_START&&virtual_addr<myEnv->uheap_limit){
+  		free_block((void *)virtual_address);
+ 	}
+ 	else if (virtual_addr>=myEnv->uheap_limit+PAGE_SIZE&&virtual_addr<USER_HEAP_MAX){
+			uint32 size;/////////////////// miss calulate from Env
+			sys_free_user_mem(virtual_addr,size);
+			
+ 	}
+ 	else panic("Invalid Address");
+ 
+
+
 }
 
 
