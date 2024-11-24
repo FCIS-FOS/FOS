@@ -230,7 +230,7 @@ void free_user_mem(struct Env* e, uint32 virtual_address, uint32 size)
 	// Write your code here, remove the panic and write your code
 	// panic("free_user_mem() is not implemented yet...!!");
 	uint32 va_page_start=ROUNDDOWN(virtual_address,PAGE_SIZE);
-	uint32 num_of_pages= ROUNDUP(size/PAGE_SIZE,PAGE_SIZE);
+	uint32 num_of_pages= ROUNDUP(size,PAGE_SIZE)/PAGE_SIZE;
 	for(uint32 current_page=va_page_start;current_page<va_page_start+(num_of_pages*PAGE_SIZE);current_page+=PAGE_SIZE){
 		//unmark the page
 		pt_set_page_permissions(e->env_page_directory,current_page,0,PERM_MARKED);
