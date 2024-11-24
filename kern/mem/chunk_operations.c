@@ -172,17 +172,17 @@ void* sys_sbrk(int numOfPages)
 	// *old_endBlock = 0;
 
 	// marking every page for future usage (no allocation done)
-	for(uint32 va = env_old_brk; va < env_new_brk; va += PAGE_SIZE)
-	{
-		uint32 *ptr_page_table=NULL;
-		if(get_page_table(env->env_page_directory,va,&ptr_page_table)==TABLE_NOT_EXIST){
-			ptr_page_table=create_page_table(env->env_page_directory,va);
+	// for(uint32 va = env_old_brk; va < env_new_brk; va += PAGE_SIZE)
+	// {
+	// 	uint32 *ptr_page_table=NULL;
+	// 	if(get_page_table(env->env_page_directory,va,&ptr_page_table)==TABLE_NOT_EXIST){
+	// 		ptr_page_table=create_page_table(env->env_page_directory,va);
 		
-		}
+	// 	}
 	
-		pt_set_page_permissions(env->env_page_directory, va, PERM_MARKED, 0);
-	}
-
+	// 	pt_set_page_permissions(env->env_page_directory, va, PERM_MARKED, 0);
+	// }
+	allocate_user_mem(env,env_old_brk,env_new_brk-env_old_brk);
 
 	// setting the new end block 
 	uint32* new_endBlock = (uint32*)(env_new_brk - sizeof(int));
@@ -213,7 +213,6 @@ void allocate_user_mem(struct Env* e, uint32 virtual_address, uint32 size)
 	// panic("allocate_user_mem() is not implemented yet...!!");
 	uint32 virtual_address_round_down=ROUNDDOWN(virtual_address,PAGE_SIZE);
 	uint32 num_of_pages=ROUNDUP(size,PAGE_SIZE)/PAGE_SIZE;
-	uint32 nun_of_tables=0;
 	for(uint32 current_page=virtual_address_round_down;
 	current_page<virtual_address_round_down+(num_of_pages*PAGE_SIZE);
 	current_page+=PAGE_SIZE)
@@ -221,7 +220,6 @@ void allocate_user_mem(struct Env* e, uint32 virtual_address, uint32 size)
 		uint32 *ptr_page_table=NULL;
 		if(get_page_table(e->env_page_directory,current_page,&ptr_page_table)==TABLE_NOT_EXIST){
 			ptr_page_table=create_page_table(e->env_page_directory,current_page);
-			nun_of_tables++;
 		}
 		pt_set_page_permissions(e->env_page_directory,current_page,PERM_MARKED,0);
 	}

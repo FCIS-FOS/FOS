@@ -164,10 +164,10 @@ void fault_handler(struct Trapframe *tf)
             if(fault_va>=USER_HEAP_START&&fault_va<=USER_HEAP_MAX&&((per & PERM_MARKED)!=PERM_MARKED)){
                env_exit();
 			}
-			if((per & PERM_PRESENT) == PERM_PRESENT&&!((per & PERM_USER) == PERM_USER))
-			{	
-				env_exit();
-			}///////
+			// if((per & PERM_PRESENT) == PERM_PRESENT&&!((per & PERM_USER) == PERM_USER))
+			// {	
+			// 	env_exit();
+			// }///////
 			/*============================================================================================*/
 		}
 
@@ -251,7 +251,7 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 
 		if (ret == E_PAGE_NOT_EXIST_IN_PF) 
 		{ 
-			if (!((fault_va >= USTACKBOTTOM && fault_va <= USTACKTOP) || (fault_va >= USER_HEAP_START && fault_va <= USER_HEAP_MAX)))
+			if (!((fault_va >= USTACKBOTTOM && fault_va < USTACKTOP) || (fault_va >= USER_HEAP_START && fault_va < USER_HEAP_MAX)))
 			env_exit();
 		}
 
