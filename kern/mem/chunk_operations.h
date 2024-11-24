@@ -21,10 +21,10 @@ int share_chunk(uint32* page_directory, uint32 source_va,uint32 dest_va, uint32 
 int allocate_chunk(uint32* page_directory, uint32 va, uint32 size, uint32 perms) ;
 /*BONUS*/ void calculate_allocated_space(uint32* page_directory, uint32 sva, uint32 eva, uint32 *num_tables, uint32 *num_pages) ;
 /*BONUS*/ uint32 calculate_required_frames(uint32* page_directory, uint32 sva, uint32 size);
-
 /*******************************/
 /*[2] USER CHUNKS MANIPULATION */
 /*******************************/
+uint32 is_page_marked(struct Env* e,uint32 virtual_address);
 void* sys_sbrk(int numOfPages);
 void free_user_mem(struct Env* e, uint32 virtual_address, uint32 size);
 void allocate_user_mem(struct Env* e, uint32 virtual_address, uint32 size);

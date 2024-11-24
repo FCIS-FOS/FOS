@@ -24,7 +24,33 @@ void* malloc(uint32 size)
 	//==============================================================
 	//TODO: [PROJECT'24.MS2 - #12] [3] USER HEAP [USER SIDE] - malloc()
 	// Write your code here, remove the panic and write your code
-	panic("malloc() is not implemented yet...!!");
+	// panic("malloc() is not implemented yet...!!");
+	if(size<=DYN_ALLOC_MAX_BLOCK_SIZE){
+		return alloc_block_FF(size);
+	}
+	uint32 start_page_allocator=myEnv->uheap_limit+PAGE_SIZE;
+	uint32 num_of_pages=ROUNDUP(size,PAGE_SIZE)/PAGE_SIZE;
+	uint32 num_of_pages_unmarked=0;
+	uint32 start_virtual_addr=0;
+
+	for (uint32 addr = myEnv->uheap_limit+PAGE_SIZE; addr < USER_HEAP_MAX; addr+=PAGE_SIZE)
+	{
+		
+		if(sys_is_page_marked(addr)==0){
+			if(num_of_pages_unmarked==0)start_virtual_addr=addr;
+			num_of_pages_unmarked++;
+		}
+		else {
+			num_of_pages_unmarked=0;
+			start_virtual_addr=0;
+		}
+
+		if(num_of_pages_unmarked==num_of_pages)break;
+	}
+	if(num_of_pages_unmarked==num_of_pages){
+		sys_allocate_user_mem(start_virtual_addr,size);
+		return (void *) start_virtual_addr;
+	}
 	return NULL;
 	//Use sys_isUHeapPlacementStrategyFIRSTFIT() and	sys_isUHeapPlacementStrategyBESTFIT()
 	//to check the current strategy
