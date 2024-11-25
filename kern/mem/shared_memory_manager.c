@@ -95,10 +95,12 @@ struct Share* create_share(int32 ownerID, char* shareName, uint32 size, uint8 is
 //	b) else: NULL
 struct Share* get_share(int32 ownerID, char* name)
 {
-	//TODO: [PROJECT'24.MS2 - #17] [4] SHARED MEMORY - get_share()
-	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("get_share is not implemented yet");
-	//Your Code is Here...
+    struct Share* current;
+
+    LIST_FOREACH(current, &AllShares.shares_list) {
+        if (current->ownerID == ownerID && current->name == name) 	return current;
+    }
+	return NULL;
 
 }
 
