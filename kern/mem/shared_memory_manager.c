@@ -176,7 +176,7 @@ int getSharedObject(int32 ownerID, char* shareName, void* virtual_address)
 	if(save_share==NULL){
 		return E_SHARED_MEM_NOT_EXISTS;
 	}
-	uint32 virtual_address_int=virtual_address;
+	uint32 virtual_address_int=(uint32)virtual_address;
 	uint32 current_page=ROUNDDOWN(virtual_address_int,PAGE_SIZE);
 	uint32 num_of_frames=ROUNDUP(save_share->size,PAGE_SIZE)/PAGE_SIZE;
 	//the permissions 
