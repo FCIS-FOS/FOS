@@ -125,10 +125,49 @@ int getSharedObject(int32 ownerID, char* shareName, void* virtual_address)
 {
 	//TODO: [PROJECT'24.MS2 - #21] [4] SHARED MEMORY [KERNEL SIDE] - getSharedObject()
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("getSharedObject is not implemented yet");
+	// panic("getSharedObject is not implemented yet");
 	//Your Code is Here...
 
 	struct Env* myenv = get_cpu_proc(); //The calling environment
+	struct Share *current_share=NULL,*save_share=NULL;
+	//protect the shared list
+	if(!holding_spinlock(&AllShares.shareslock)){
+		acquire_spinlock(&AllShares.shareslock);
+	}
+	LIST_FOREACH(current_share,&AllShares.shares_list){
+		//owner id matches , names have the same length and match
+		if(current_share->ownerID==ownerID && 
+		strlen(shareName)==strlen(current_share->name) && 
+		strcmp(shareName,current_share->name))
+		{
+			save_share=current_share;
+			break;
+		}
+	}
+	//release the gaurd
+	if(!holding_spinlock(&AllShares.shareslock)){
+		release_spinlock(&AllShares.shareslock);
+	}
+	//didnt find the shared object
+	if(save_share==NULL){
+		return E_SHARED_MEM_NOT_EXISTS;
+	}
+	uint32 virtual_address_int=virtual_address;
+	uint32 current_page=ROUNDDOWN(virtual_address_int,PAGE_SIZE);
+	uint32 num_of_frames=ROUNDUP(save_share->size,PAGE_SIZE)/PAGE_SIZE;
+	//the permissions 
+	uint32 perm=PERM_PRESENT | PERM_USER;
+	if(save_share->isWritable){
+		perm|=PERM_WRITEABLE;
+	}
+	//map each page to a shared frame
+	for(uint32 i =0;i<number_of_frames;i++){
+		map_frame(myenv->env_page_directory,save_share->framesStorage[i],current_page,perm);
+		current_page+=PAGE_SIZE;
+	}
+	// retrun the share id (might need to mask it if its not masked)
+	uint32 mask =0x7FFFFFFF;
+	return save_share->ID & mask;
 }
 
 //==================================================================================//
