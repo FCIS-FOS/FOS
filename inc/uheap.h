@@ -13,9 +13,9 @@ struct allocations
 {
    uint32 start_va;
    uint32 size;
+   uint8 is_marked;
 };
 
-struct allocations page_alloc[(USER_HEAP_MAX-USER_HEAP_START)/PAGE_SIZE];
 
 
 

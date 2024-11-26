@@ -24,7 +24,6 @@ int allocate_chunk(uint32* page_directory, uint32 va, uint32 size, uint32 perms)
 /*******************************/
 /*[2] USER CHUNKS MANIPULATION */
 /*******************************/
-uint32 is_page_marked(struct Env* e,uint32 virtual_address);
 void* sys_sbrk(int numOfPages);
 void free_user_mem(struct Env* e, uint32 virtual_address, uint32 size);
 void allocate_user_mem(struct Env* e, uint32 virtual_address, uint32 size);
