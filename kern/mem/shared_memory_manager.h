@@ -52,7 +52,7 @@ LIST_HEAD(Share_List, Share);		// Declares 'struct Share_List'
 
 	void sharing_init();
 #endif
-
+struct FrameInfo** create_frames_storage(int numOfFrames);
 int createSharedObject(int32 ownerID, char* shareName, uint32 size, uint8 isWritable, void* virtual_address);
 int getSizeOfSharedObject(int32 ownerID, char* shareName);
 int getSharedObject(int32 ownerID, char* shareName, void* virtual_address);

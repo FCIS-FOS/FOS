@@ -9,6 +9,15 @@
 
 //2020
 #define UHP_USE_BUDDY 0
+struct allocations
+{
+   uint32 start_va;
+   uint32 size;
+};
+
+struct allocations page_alloc[(USER_HEAP_MAX-USER_HEAP_START)/PAGE_SIZE];
+
+
 
 void *malloc(uint32 size);
 void* smalloc(char *sharedVarName, uint32 size, uint8 isWritable);

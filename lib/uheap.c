@@ -24,7 +24,42 @@ void* malloc(uint32 size)
 	//==============================================================
 	//TODO: [PROJECT'24.MS2 - #12] [3] USER HEAP [USER SIDE] - malloc()
 	// Write your code here, remove the panic and write your code
-	panic("malloc() is not implemented yet...!!");
+	// panic("malloc() is not implemented yet...!!");
+	if(size<=DYN_ALLOC_MAX_BLOCK_SIZE){
+		return alloc_block_FF(size);
+	}
+	uint32 start_page_allocator=myEnv->uheap_limit+PAGE_SIZE;
+	uint32 num_of_pages=ROUNDUP(size,PAGE_SIZE)/PAGE_SIZE;
+	uint32 num_of_pages_unmarked=0;
+	uint32 start_virtual_addr=0;
+
+	for (uint32 addr = myEnv->uheap_limit+PAGE_SIZE; addr < USER_HEAP_MAX; addr+=PAGE_SIZE)
+	{
+		
+		if(sys_is_page_marked(addr)==0){
+			if(num_of_pages_unmarked==0)start_virtual_addr=addr;
+			num_of_pages_unmarked++;
+		}
+		else {
+			num_of_pages_unmarked=0;
+			start_virtual_addr=0;
+		}
+
+		if(num_of_pages_unmarked==num_of_pages)break;
+	}
+	if(num_of_pages_unmarked==num_of_pages){
+		// page_alloc[(start_virtual_addr-USER_HEAP_START)]
+		
+		sys_allocate_user_mem(start_virtual_addr,size);
+		  for(uint32 current_page=start_virtual_addr;
+        current_page<start_virtual_addr+(num_of_pages*PAGE_SIZE);
+        current_page+=PAGE_SIZE)
+        {
+            page_alloc[(current_page-USER_HEAP_START)/PAGE_SIZE].start_va=start_virtual_addr;
+            page_alloc[(current_page-USER_HEAP_START)/PAGE_SIZE].size=size;
+        }
+		return (void *) start_virtual_addr;
+	}
 	return NULL;
 	//Use sys_isUHeapPlacementStrategyFIRSTFIT() and	sys_isUHeapPlacementStrategyBESTFIT()
 	//to check the current strategy
@@ -36,9 +71,23 @@ void* malloc(uint32 size)
 //=================================
 void free(void* virtual_address)
 {
-	//TODO: [PROJECT'24.MS2 - #14] [3] USER HEAP [USER SIDE] - free()
-	// Write your code here, remove the panic and write your code
-	panic("free() is not implemented yet...!!");
+	 //TODO: [PROJECT'24.MS2 - #14] [3] USER HEAP [USER SIDE] - free()
+ 	// Write your code here, remove the panic and write your code
+ 	//panic("free() is not implemented yet...!!");
+	uint32 virtual_addr=(uint32)virtual_address;
+	if (virtual_addr>=USER_HEAP_START&&virtual_addr<myEnv->uheap_limit){
+  		free_block((void *)virtual_address);
+ 	}
+ 	else if (virtual_addr>=myEnv->uheap_limit+PAGE_SIZE&&virtual_addr<USER_HEAP_MAX){
+			uint32 start=page_alloc[(ROUNDDOWN(virtual_addr,PAGE_SIZE)-USER_HEAP_START)/PAGE_SIZE].start_va;/////////////////// miss calulate from Env
+			uint32 size=page_alloc[(ROUNDDOWN(virtual_addr,PAGE_SIZE)-USER_HEAP_START)/PAGE_SIZE].size;
+			sys_free_user_mem(start,size);
+			
+ 	}
+ 	else panic("Invalid Address");
+ 
+
+
 }
 
 
