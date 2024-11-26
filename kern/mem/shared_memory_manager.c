@@ -66,9 +66,15 @@ inline struct FrameInfo** create_frames_storage(int numOfFrames)
 {
 	//TODO: [PROJECT'24.MS2 - #16] [4] SHARED MEMORY - create_frames_storage()
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("create_frames_storage is not implemented yet");
+	//panic("create_frames_storage is not implemented yet");
 	//Your Code is Here...
-
+    struct FrameInfo **framestorge=(struct FrameInfo **)kmalloc(numOfFrames*sizeof(struct FrameInfo*));
+	if(framestorge==NULL)
+	    return NULL;
+    for(int i=0;i<numOfFrames;i++)
+	    framestorge[i]=NULL;
+	
+	return framestorge;
 }
 
 //=====================================
@@ -81,9 +87,27 @@ struct Share* create_share(int32 ownerID, char* shareName, uint32 size, uint8 is
 {
 	//TODO: [PROJECT'24.MS2 - #16] [4] SHARED MEMORY - create_share()
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("create_share is not implemented yet");
+	//panic("create_share is not implemented yet");
 	//Your Code is Here...
-
+    struct Share * share = (struct Share *)kmalloc(size);
+	if(share == NULL)
+	 return NULL;
+	share->references=1;
+	share->ID=(((uint32)share)<<1)>>1;
+	share->ownerID=ownerID;
+	share->isWritable=isWritable;
+	share->size=size; 
+	int len=strlen(shareName);
+	for(int i=0;i<len;i++)
+	 share->name[i]=shareName[i];
+	
+	int numOfFrames =(ROUNDUP(size,PAGE_SIZE)/PAGE_SIZE);
+	share->framesStorage=create_frames_storage(numOfFrames);
+    if(share->framesStorage==NULL){
+		kfree(share);
+		return NULL;
+	}
+    return share;
 }
 
 //=============================
