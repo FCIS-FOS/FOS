@@ -123,8 +123,8 @@ void* smalloc(char *sharedVarName, uint32 size, uint8 isWritable)
 		if(num_of_pages_unmarked==num_of_pages)break;
 	}
 	if(num_of_pages_unmarked==num_of_pages){
-		sys_createSharedObject(sharedVarName, size, isWritable, start_virtual_addr);
-		return start_virtual_addr;
+		sys_createSharedObject(sharedVarName, size, isWritable, (void*)start_virtual_addr);
+		return (void*)start_virtual_addr;
 	}else{
 		return NULL;
 	}
