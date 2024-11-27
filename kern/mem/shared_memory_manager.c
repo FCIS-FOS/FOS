@@ -193,6 +193,9 @@ int createSharedObject(int32 ownerID, char* shareName, uint32 size, uint8 isWrit
 	if(req_frames > LIST_SIZE(&MemFrameLists.free_frame_list));
 		return E_NO_SHARE;
 
+	
+	uint32 mapping_virtual_address = (uint32)virtual_address;
+
 	for(int i = 0; i < req_frames; i++)
 	{
 		struct FrameInfo* ptr_frame_info;
@@ -200,7 +203,9 @@ int createSharedObject(int32 ownerID, char* shareName, uint32 size, uint8 isWrit
 
 		new_shared_obj->framesStorage[i] = ptr_frame_info;
 
-		map_frame(myenv->env_page_directory, ptr_frame_info, (uint32)virtual_address, PERM_WRITEABLE);
+		map_frame(myenv->env_page_directory, ptr_frame_info, mapping_virtual_address, PERM_WRITEABLE);
+
+		mapping_virtual_address += PAGE_SIZE;
 	} 
 
 	//->ID = (uint32)virtual_address | 0x80000000;
