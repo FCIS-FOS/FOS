@@ -135,10 +135,84 @@ int createSharedObject(int32 ownerID, char* shareName, uint32 size, uint8 isWrit
 {
 	//TODO: [PROJECT'24.MS2 - #19] [4] SHARED MEMORY [KERNEL SIDE] - createSharedObject()
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("createSharedObject is not implemented yet");
+	//panic("createSharedObject is not implemented yet");
 	//Your Code is Here...
 
 	struct Env* myenv = get_cpu_proc(); //The calling environment
+
+	/*
+	## OUTLINE
+		0. Handling if the shared object exists already.
+			|
+			-> Check if the shared object exists using get share before pushing it, if existed return E_SHARE_MEM_EXISTS.
+
+		1. make a new shared object using the create_share function.
+			|
+			-> return E_NO_SHARE  if the return of the function is NULL.
+
+		2. push the new shared object in the share list
+			|
+			-> Acquire the list's spinlock before pushing and releasing after allocation.
+
+		3. Allocate and map the required space in physical memory
+			|
+			-> Check if we have the required frames in the free frames list before allocate_frame.
+			|
+			-> push every successfully allocated frame in the frames storage of the shared objecT.
+	*/
+
+
+	// # step 0
+	void* shared_exist = (void*)get_share(ownerID, shareName);
+
+	if(shared_exist != NULL)
+	{
+		return E_SHARED_MEM_EXISTS;
+	} 
+
+	// # step 1
+	struct Share* new_shared_obj = create_share(ownerID, shareName, size, isWritable);
+
+	if(new_shared_obj == NULL)
+	{
+		return E_NO_SHARE;
+	}
+
+	// # step 2
+
+	acquire_spinlock(&AllShares.shareslock);
+
+	LIST_INSERT_TAIL(&AllShares.shares_list, new_shared_obj);
+
+	release_spinlock(&AllShares.shareslock);
+
+	// # step 3
+
+	uint32 req_frames = ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE;
+
+	if(req_frames > LIST_SIZE(&MemFrameLists.free_frame_list));
+		return E_NO_SHARE;
+
+	
+	uint32 mapping_virtual_address = (uint32)virtual_address;
+
+	for(int i = 0; i < req_frames; i++)
+	{
+		struct FrameInfo* ptr_frame_info;
+		allocate_frame(&ptr_frame_info);
+
+		new_shared_obj->framesStorage[i] = ptr_frame_info;
+
+		map_frame(myenv->env_page_directory, ptr_frame_info, mapping_virtual_address, PERM_WRITEABLE);
+
+		mapping_virtual_address += PAGE_SIZE;
+	} 
+
+	//->ID = (uint32)virtual_address | 0x80000000;
+
+	return new_shared_obj->ID;
+
+
 }
 
 
