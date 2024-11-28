@@ -133,7 +133,7 @@ void* sget(int32 ownerEnvID, char *sharedVarName)
 
 	for (uint32 addr = myEnv->uheap_limit+PAGE_SIZE; addr < USER_HEAP_MAX; addr+=PAGE_SIZE)
 	{
-		if(sys_is_page_marked(addr)==0){
+			if(page_alloc[(addr-USER_HEAP_START)/PAGE_SIZE].is_marked==0){
 			if(num_of_pages_unmarked==0)start_virtual_addr=addr;
 			num_of_pages_unmarked++;
 		}
