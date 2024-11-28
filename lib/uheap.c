@@ -156,16 +156,17 @@ void* sget(int32 ownerEnvID, char *sharedVarName)
 	// Write your code here, remove the panic and write your code
 	// panic("sget() is not implemented yet...!!");
 	
-
+	cprintf("in sget\n");
 	int size= sys_getSizeOfSharedObject(ownerEnvID,sharedVarName);
+	cprintf("in sget2\n");
 	size = ROUNDUP((uint32)size,PAGE_SIZE);
 	if(size == E_SHARED_MEM_NOT_EXISTS||size == 0)return NULL;
-
+	cprintf("1\n");
 	uint32 start_page_allocator=myEnv->uheap_limit+PAGE_SIZE;
 	uint32 num_of_pages=ROUNDUP(size,PAGE_SIZE)/PAGE_SIZE;
 	uint32 num_of_pages_unmarked=0;
 	uint32 start_virtual_addr=0;
-
+	cprintf("2\n");
 	for (uint32 addr = myEnv->uheap_limit+PAGE_SIZE; addr < USER_HEAP_MAX; addr+=PAGE_SIZE)
 	{
 			if(page_alloc[(addr-USER_HEAP_START)/PAGE_SIZE].is_marked==0){
@@ -187,7 +188,7 @@ void* sget(int32 ownerEnvID, char *sharedVarName)
 		}
 		return (void *)start_virtual_addr;
 	}
-
+	cprintf("3\n");
 	return NULL;
 
 }

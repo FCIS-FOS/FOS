@@ -43,7 +43,9 @@ int getSizeOfSharedObject(int32 ownerID, char* shareName)
 	//	a) If found, return size of shared object
 	//	b) Else, return E_SHARED_MEM_NOT_EXISTS
 	//
+	cprintf("4\n");
 	struct Share* ptr_share = get_share(ownerID, shareName);
+	cprintf("4\n");
 	if (ptr_share == NULL)
 		return E_SHARED_MEM_NOT_EXISTS;
 	else
@@ -122,8 +124,10 @@ struct Share* get_share(int32 ownerID, char* name)
     struct Share* current;
 
     LIST_FOREACH(current, &AllShares.shares_list) {
-        if (current->ownerID == ownerID && current->name == name) 	return current;
+        if (current->ownerID == ownerID && current->name == name) { cprintf("break\n");	return current;}
+		cprintf("in loop\n");
     }
+	cprintf("out loop\n");
 	return NULL;
 
 }
@@ -224,6 +228,7 @@ int createSharedObject(int32 ownerID, char* shareName, uint32 size, uint8 isWrit
 //======================
 int getSharedObject(int32 ownerID, char* shareName, void* virtual_address)
 {
+	cprintf("in\n");
 	//TODO: [PROJECT'24.MS2 - #21] [4] SHARED MEMORY [KERNEL SIDE] - getSharedObject()
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
 	// panic("getSharedObject is not implemented yet");
