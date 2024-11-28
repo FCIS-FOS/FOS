@@ -15,7 +15,6 @@ struct allocations
    uint32 size;
 };
 
-struct allocations page_alloc[(USER_HEAP_MAX-USER_HEAP_START)/PAGE_SIZE];
 
 
 
