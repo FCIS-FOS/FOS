@@ -3,7 +3,12 @@
 #include <inc/memlayout.h>
 #include <inc/dynamic_allocator.h>
 #include "memory_manager.h"
-
+#define DYNAMIC_ALLOCATOR_DS 0 //ROUNDUP(NUM_OF_KHEAP_PAGES * sizeof(struct MemBlock), PAGE_SIZE)
+#define INITIAL_KHEAP_ALLOCATIONS (DYNAMIC_ALLOCATOR_DS) //( + KERNEL_SHARES_ARR_INIT_SIZE + KERNEL_SEMAPHORES_ARR_INIT_SIZE) //
+#define INITIAL_BLOCK_ALLOCATIONS ((2*sizeof(int) + MAX(num_of_ready_queues * sizeof(uint8), DYN_ALLOC_MIN_BLOCK_SIZE)) + (2*sizeof(int) + MAX(num_of_ready_queues * sizeof(struct Env_Queue), DYN_ALLOC_MIN_BLOCK_SIZE)))
+#define ACTUAL_START ((KERNEL_HEAP_START + DYN_ALLOC_MAX_SIZE + PAGE_SIZE) + INITIAL_KHEAP_ALLOCATIONS)
+struct Page allPages[(KERNEL_HEAP_MAX-ACTUAL_START)/PAGE_SIZE];
+uint32 start_ind;
 //Initialize the dynamic allocator of kernel heap with the given start address, size & limit
 //All pages in the given range should be allocated
 //Remember: call the initialize_dynamic_allocator(..) to complete the initialization
@@ -43,7 +48,10 @@ int initialize_kheap_dynamic_allocator(uint32 daStart, uint32 initSizeToAllocate
 
 		ptr_page_table[PTX(curPage)] = 0;
 	}
-
+	// initialize the allpages array and the start index
+	allPages[0].num_of_pages=(KERNEL_HEAP_MAX-ACTUAL_START)/PAGE_SIZE;
+	allPages[0].next_index=-1;
+	start_ind=0;
 	return 0;
 }
 
@@ -169,27 +177,44 @@ void* kmalloc(unsigned int size)
 	const uint32 HARD_LIMIT = limit;
 	uint32 pages = 0;
 	uint32 allocStart = HARD_LIMIT + PAGE_SIZE;
-
-
-	uint32 currentPage = HARD_LIMIT + PAGE_SIZE;
-	while(currentPage < KERNEL_HEAP_MAX){
-		if(pages == requiredPages){
+	uint32 prev=0;
+	for(uint32 i=start_ind; i!=-1;i=allPages[i].next_index)
+	{
+		//num>required ---> split
+		if(allPages[i].num_of_pages>requiredPages){
+			//move start index
+			if(i==start_ind){
+				start_ind+=requiredPages;
+				allPages[start_ind].next_index=allPages[i].next_index;
+				allPages[start_ind].num_of_pages=allPages[i].num_of_pages-requiredPages;
+			}
+			// normal allocation
+			else{
+				allPages[prev].next_index=i+requiredPages;
+				allPages[i+requiredPages].next_index=allPages[i].next_index;
+				allPages[i+requiredPages].num_of_pages=allPages[i].num_of_pages-requiredPages;
+			}
+			pages=requiredPages;
+			//the start address of allocation (hard limit + page size + (page#i * Page size))
+			allocStart+=i*PAGE_SIZE;
 			break;
 		}
-
-		if(pageIsFree((void*)currentPage)){
-			pages++;
-			currentPage += PAGE_SIZE;
-		}else{
-			if(pages<requiredPages){
-				while(currentPage<KERNEL_HEAP_MAX && !pageIsFree((void*)currentPage)){
-					currentPage+=PAGE_SIZE;
-				}
-				allocStart = currentPage;
-				pages = 0;
+		// num == required ------> take all
+		else if (allPages[i].num_of_pages==requiredPages){
+			//move start index
+			if(i==start_ind){
+				start_ind=allPages[i].next_index;
 			}
+			//normal allocation
+			else{
+				allPages[prev].next_index=allPages[i].next_index;
+			}
+			pages=requiredPages;
+			//the start address of allocation (hard limit + page size + (page#i * Page size))
+			allocStart+=i*PAGE_SIZE;
+			break;
 		}
-
+		prev=i;
 	}
 
 	if(pages!=requiredPages){
@@ -250,6 +275,53 @@ void kfree(void* virtual_address)
             frame->mappedVA=0;
             unmap_frame(ptr_page_directory,current);
         }
+		uint32 as_ind=(allocStart-ACTUAL_START)/PAGE_SIZE;
+		//free address<start_ind
+		if(as_ind<start_ind){
+			allPages[as_ind].next_index=start_ind;
+			allPages[as_ind].num_of_pages=allocSize;
+			if(as_ind+allocSize==start_ind){
+				allPages[as_ind].num_of_pages+=allPages[start_ind].num_of_pages;
+				allPages[as_ind].next_index=allPages[start_ind].next_index;
+			}
+			start_ind=as_ind;
+		}
+		//free address >start_ind and next of start is after free address
+		else{
+			for(uint32 i = start_ind;i!=-1;i=allPages[i].next_index){
+				if(as_ind>i && as_ind<allPages[i].next_index){
+					if(allPages[i].num_of_pages+i==as_ind){
+						allPages[i].num_of_pages+=allocSize;
+						if(as_ind+allocSize==allPages[i].next_index){
+							allPages[i].num_of_pages+=allPages[allPages[i].next_index].num_of_pages;
+							allPages[i].next_index=allPages[allPages[i].next_index].next_index;
+						}
+					}
+					else if(as_ind+allocSize==allPages[i].next_index){
+						allPages[as_ind].num_of_pages=allPages[allPages[i].next_index].num_of_pages+allocSize;
+						allPages[as_ind].next_index=allPages[allPages[i].next_index].next_index;
+						allPages[i].next_index=as_ind;
+					}
+					else{
+						allPages[as_ind].next_index=allPages[i].next_index;
+						allPages[i].next_index=as_ind;
+						allPages[as_ind].num_of_pages=allocSize;
+					}
+					break;
+				}
+				else if (as_ind>i && allPages[i].next_index==-1){
+					if(allPages[i].num_of_pages+i==as_ind){
+						allPages[i].num_of_pages+=allocSize;
+					}
+					else{
+						allPages[i].next_index=as_ind;
+						allPages[as_ind].next_index=-1;
+						allPages[as_ind].num_of_pages=allocSize;
+					}
+					break;
+				}
+			}
+		}
     }
   
 	//Virtual Address is invalid
