@@ -4,7 +4,7 @@ struct allocations page_alloc[(USER_HEAP_MAX-USER_HEAP_START)/PAGE_SIZE];
 //==================================================================================//
 //============================ REQUIRED FUNCTIONS ==================================//
 //==================================================================================//
-
+struct allocations page_alloc[(USER_HEAP_MAX-USER_HEAP_START)/PAGE_SIZE];
 //=============================================
 // [1] CHANGE THE BREAK LIMIT OF THE USER HEAP:
 //=============================================
@@ -119,8 +119,23 @@ void* sget(int32 ownerEnvID, char *sharedVarName)
 {
 	//TODO: [PROJECT'24.MS2 - #20] [4] SHARED MEMORY [USER SIDE] - sget()
 	// Write your code here, remove the panic and write your code
-	panic("sget() is not implemented yet...!!");
+	// panic("sget() is not implemented yet...!!");
+	int size= sys_getSizeOfSharedObject(ownerEnvID,sharedVarName);
+	if(size == E_SHARED_MEM_NOT_EXISTS||size == 0)return NULL;
+
+	size = ROUNDUP((uint32)size,PAGE_SIZE);
+	void * va= malloc(size);
+	if(va==NULL)return NULL;
+
+	int id = sys_getSharedObject(ownerEnvID,sharedVarName,va);
+
+	if(id == E_SHARED_MEM_NOT_EXISTS)
+	{
+	free(va);
 	return NULL;
+	}
+	
+	return va;
 }
 
 
