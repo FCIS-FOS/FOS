@@ -7,6 +7,7 @@
 //=============================================
 // [1] CHANGE THE BREAK LIMIT OF THE USER HEAP:
 //=============================================
+struct allocations page_alloc[(USER_HEAP_MAX-USER_HEAP_START)/PAGE_SIZE];
 /*2023*/
 void* sbrk(int increment)
 {
@@ -130,6 +131,8 @@ void* smalloc(char *sharedVarName, uint32 size, uint8 isWritable)
 		for(uint32 i = 0;i<num_of_pages; i++){
 			cprintf("will allocate page number:%d, initial mark:%d \n",(tst-USER_HEAP_START)/PAGE_SIZE,page_alloc[(tst-USER_HEAP_START)/PAGE_SIZE].is_marked);
 			tst+=PAGE_SIZE;
+			page_alloc[(tst-USER_HEAP_START)/PAGE_SIZE].is_marked=1;
+
 		}
 		sys_createSharedObject(sharedVarName, size, isWritable, (void*)start_virtual_addr);
 		return (void*)start_virtual_addr;

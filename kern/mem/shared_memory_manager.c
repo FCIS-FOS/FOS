@@ -205,8 +205,8 @@ int createSharedObject(int32 ownerID, char* shareName, uint32 size, uint8 isWrit
 		new_shared_obj->framesStorage[i] = ptr_frame_info;
 
 		map_frame(myenv->env_page_directory, ptr_frame_info, mapping_virtual_address, PERM_WRITEABLE|PERM_PRESENT);
-		page_alloc[(mapping_virtual_address-USER_HEAP_START)/PAGE_SIZE].is_marked=1;
-		cprintf("create at page:%d, isMarked=%d \n",(mapping_virtual_address-USER_HEAP_START)/PAGE_SIZE,page_alloc[(mapping_virtual_address-USER_HEAP_START)/PAGE_SIZE].is_marked);
+		// page_alloc[(mapping_virtual_address-USER_HEAP_START)/PAGE_SIZE].is_marked=1;
+		// cprintf("create at page:%d, isMarked=%d \n",(mapping_virtual_address-USER_HEAP_START)/PAGE_SIZE,page_alloc[(mapping_virtual_address-USER_HEAP_START)/PAGE_SIZE].is_marked);
 
 		mapping_virtual_address += PAGE_SIZE;
 	} 
