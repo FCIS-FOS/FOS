@@ -280,28 +280,34 @@ void kfree(void* virtual_address)
 		if(as_ind<start_ind){
 			allPages[as_ind].next_index=start_ind;
 			allPages[as_ind].num_of_pages=allocSize;
+			// merge with old first block
 			if(as_ind+allocSize==start_ind){
 				allPages[as_ind].num_of_pages+=allPages[start_ind].num_of_pages;
 				allPages[as_ind].next_index=allPages[start_ind].next_index;
 			}
 			start_ind=as_ind;
 		}
-		//free address >start_ind and next of start is after free address
 		else{
+			// loop until free address >current block and next of current block is after free address
 			for(uint32 i = start_ind;i!=-1;i=allPages[i].next_index){
+				//free address >current block and next of current block is after free address
 				if(as_ind>i && as_ind<allPages[i].next_index){
+					//merge with the current block
 					if(allPages[i].num_of_pages+i==as_ind){
 						allPages[i].num_of_pages+=allocSize;
+						//merge with the next block
 						if(as_ind+allocSize==allPages[i].next_index){
 							allPages[i].num_of_pages+=allPages[allPages[i].next_index].num_of_pages;
 							allPages[i].next_index=allPages[allPages[i].next_index].next_index;
 						}
 					}
+					//merge with the next block
 					else if(as_ind+allocSize==allPages[i].next_index){
 						allPages[as_ind].num_of_pages=allPages[allPages[i].next_index].num_of_pages+allocSize;
 						allPages[as_ind].next_index=allPages[allPages[i].next_index].next_index;
 						allPages[i].next_index=as_ind;
 					}
+					//normal free
 					else{
 						allPages[as_ind].next_index=allPages[i].next_index;
 						allPages[i].next_index=as_ind;
@@ -309,10 +315,13 @@ void kfree(void* virtual_address)
 					}
 					break;
 				}
+				//free address is the last block in the chain
 				else if (as_ind>i && allPages[i].next_index==-1){
+					//merge with current block
 					if(allPages[i].num_of_pages+i==as_ind){
 						allPages[i].num_of_pages+=allocSize;
 					}
+					//normal free
 					else{
 						allPages[i].next_index=as_ind;
 						allPages[as_ind].next_index=-1;
