@@ -1,4 +1,5 @@
 #include <inc/lib.h>
+struct allocations page_alloc[(USER_HEAP_MAX-USER_HEAP_START)/PAGE_SIZE];
 
 //==================================================================================//
 //============================ REQUIRED FUNCTIONS ==================================//
@@ -36,7 +37,7 @@ void* malloc(uint32 size)
 	for (uint32 addr = myEnv->uheap_limit+PAGE_SIZE; addr < USER_HEAP_MAX; addr+=PAGE_SIZE)
 	{
 		
-		if(sys_is_page_marked(addr)==0){
+		if(page_alloc[(addr-USER_HEAP_START)/PAGE_SIZE].is_marked==0){
 			if(num_of_pages_unmarked==0)start_virtual_addr=addr;
 			num_of_pages_unmarked++;
 		}
@@ -49,7 +50,16 @@ void* malloc(uint32 size)
 	}
 	if(num_of_pages_unmarked==num_of_pages){
 		// page_alloc[(start_virtual_addr-USER_HEAP_START)]
+		
 		sys_allocate_user_mem(start_virtual_addr,size);
+		  for(uint32 current_page=start_virtual_addr;
+        current_page<start_virtual_addr+(num_of_pages*PAGE_SIZE);
+        current_page+=PAGE_SIZE)
+        {
+            page_alloc[(current_page-USER_HEAP_START)/PAGE_SIZE].start_va=start_virtual_addr;
+            page_alloc[(current_page-USER_HEAP_START)/PAGE_SIZE].size=size;
+			page_alloc[(current_page-USER_HEAP_START)/PAGE_SIZE].is_marked=1;
+        }
 		return (void *) start_virtual_addr;
 	}
 	return NULL;
@@ -74,7 +84,11 @@ void free(void* virtual_address)
 			uint32 start=page_alloc[(ROUNDDOWN(virtual_addr,PAGE_SIZE)-USER_HEAP_START)/PAGE_SIZE].start_va;/////////////////// miss calulate from Env
 			uint32 size=page_alloc[(ROUNDDOWN(virtual_addr,PAGE_SIZE)-USER_HEAP_START)/PAGE_SIZE].size;
 			sys_free_user_mem(start,size);
-			
+			uint32 va_page_start=ROUNDDOWN(virtual_addr,PAGE_SIZE);
+			uint32 num_of_pages= ROUNDUP(size,PAGE_SIZE)/PAGE_SIZE;
+			for(uint32 current_page=va_page_start;current_page<va_page_start+(num_of_pages*PAGE_SIZE);current_page+=PAGE_SIZE){
+				page_alloc[(current_page-USER_HEAP_START)/PAGE_SIZE].is_marked=0;
+			}
  	}
  	else panic("Invalid Address");
  
