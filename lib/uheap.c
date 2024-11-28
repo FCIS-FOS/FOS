@@ -114,22 +114,41 @@ void* sget(int32 ownerEnvID, char *sharedVarName)
 	//TODO: [PROJECT'24.MS2 - #20] [4] SHARED MEMORY [USER SIDE] - sget()
 	// Write your code here, remove the panic and write your code
 	// panic("sget() is not implemented yet...!!");
+	
+
 	int size= sys_getSizeOfSharedObject(ownerEnvID,sharedVarName);
+	size = ROUNDUP((uint32)size,PAGE_SIZE);
 	if(size == E_SHARED_MEM_NOT_EXISTS||size == 0)return NULL;
 
-	size = ROUNDUP((uint32)size,PAGE_SIZE);
-	void * va= malloc(size);
-	if(va==NULL)return NULL;
+	uint32 start_page_allocator=myEnv->uheap_limit+PAGE_SIZE;
+	uint32 num_of_pages=ROUNDUP(size,PAGE_SIZE)/PAGE_SIZE;
+	uint32 num_of_pages_unmarked=0;
+	uint32 start_virtual_addr=0;
 
-	int id = sys_getSharedObject(ownerEnvID,sharedVarName,va);
-
-	if(id == E_SHARED_MEM_NOT_EXISTS)
+	for (uint32 addr = myEnv->uheap_limit+PAGE_SIZE; addr < USER_HEAP_MAX; addr+=PAGE_SIZE)
 	{
-	free(va);
-	return NULL;
+		if(sys_is_page_marked(addr)==0){
+			if(num_of_pages_unmarked==0)start_virtual_addr=addr;
+			num_of_pages_unmarked++;
+		}
+		else {
+			num_of_pages_unmarked=0;
+			start_virtual_addr=0;
+		}
+
+		if(num_of_pages_unmarked==num_of_pages)break;
 	}
-	
-	return va;
+	if(num_of_pages_unmarked==num_of_pages){
+		int id = sys_getSharedObject(ownerEnvID,sharedVarName,(void *)start_virtual_addr);
+		if(id == E_SHARED_MEM_NOT_EXISTS)
+		{
+		return NULL;
+		}
+		return (void *)start_virtual_addr;
+	}
+
+	return NULL;
+
 }
 
 
