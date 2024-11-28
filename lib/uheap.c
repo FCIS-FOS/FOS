@@ -111,7 +111,7 @@ void* smalloc(char *sharedVarName, uint32 size, uint8 isWritable)
 	for (uint32 addr = myEnv->uheap_limit+PAGE_SIZE; addr < USER_HEAP_MAX; addr+=PAGE_SIZE)
 	{
 		
-		if(sys_is_page_marked(addr)==0){
+		if(page_alloc[(addr-USER_HEAP_START)/PAGE_SIZE].is_marked == 0){
 			if(num_of_pages_unmarked==0)start_virtual_addr=addr;
 			num_of_pages_unmarked++;
 		}
@@ -122,7 +122,15 @@ void* smalloc(char *sharedVarName, uint32 size, uint8 isWritable)
 
 		if(num_of_pages_unmarked==num_of_pages)break;
 	}
+
+
 	if(num_of_pages_unmarked==num_of_pages){
+		//for testing
+		uint32 tst = start_virtual_addr;
+		for(uint32 i = 0;i<num_of_pages; i++){
+			cprintf("will allocate page number:%d, initial mark:%d \n",(tst-USER_HEAP_START)/PAGE_SIZE,page_alloc[(tst-USER_HEAP_START)/PAGE_SIZE].is_marked);
+			tst+=PAGE_SIZE;
+		}
 		sys_createSharedObject(sharedVarName, size, isWritable, (void*)start_virtual_addr);
 		return (void*)start_virtual_addr;
 	}else{
