@@ -190,8 +190,9 @@ int createSharedObject(int32 ownerID, char* shareName, uint32 size, uint8 isWrit
 
 	uint32 req_frames = ROUNDUP(size, PAGE_SIZE) / PAGE_SIZE;
 
-	if(req_frames > LIST_SIZE(&MemFrameLists.free_frame_list));
+	if(req_frames > LIST_SIZE(&MemFrameLists.free_frame_list)){
 		return E_NO_SHARE;
+	}
 
 	
 	uint32 mapping_virtual_address = (uint32)virtual_address;
@@ -203,7 +204,9 @@ int createSharedObject(int32 ownerID, char* shareName, uint32 size, uint8 isWrit
 
 		new_shared_obj->framesStorage[i] = ptr_frame_info;
 
-		map_frame(myenv->env_page_directory, ptr_frame_info, mapping_virtual_address, PERM_WRITEABLE);
+		map_frame(myenv->env_page_directory, ptr_frame_info, mapping_virtual_address, PERM_WRITEABLE|PERM_PRESENT|PERM_USER);
+		// page_alloc[(mapping_virtual_address-USER_HEAP_START)/PAGE_SIZE].is_marked=1;
+		// cprintf("create at page:%d, isMarked=%d \n",(mapping_virtual_address-USER_HEAP_START)/PAGE_SIZE,page_alloc[(mapping_virtual_address-USER_HEAP_START)/PAGE_SIZE].is_marked);
 
 		mapping_virtual_address += PAGE_SIZE;
 	} 

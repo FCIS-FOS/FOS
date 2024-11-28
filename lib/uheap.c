@@ -4,7 +4,7 @@ struct allocations page_alloc[(USER_HEAP_MAX-USER_HEAP_START)/PAGE_SIZE];
 //==================================================================================//
 //============================ REQUIRED FUNCTIONS ==================================//
 //==================================================================================//
-
+struct allocations page_alloc[(USER_HEAP_MAX-USER_HEAP_START)/PAGE_SIZE];
 //=============================================
 // [1] CHANGE THE BREAK LIMIT OF THE USER HEAP:
 //=============================================
@@ -108,8 +108,43 @@ void* smalloc(char *sharedVarName, uint32 size, uint8 isWritable)
 	//==============================================================
 	//TODO: [PROJECT'24.MS2 - #18] [4] SHARED MEMORY [USER SIDE] - smalloc()
 	// Write your code here, remove the panic and write your code
-	panic("smalloc() is not implemented yet...!!");
-	return NULL;
+	// panic("smalloc() is not implemented yet...!!");
+	uint32 start_page_allocator=myEnv->uheap_limit+PAGE_SIZE;
+	uint32 num_of_pages=ROUNDUP(size,PAGE_SIZE)/PAGE_SIZE;
+	uint32 num_of_pages_unmarked=0;
+	uint32 start_virtual_addr=0;
+
+	for (uint32 addr = myEnv->uheap_limit+PAGE_SIZE; addr < USER_HEAP_MAX; addr+=PAGE_SIZE)
+	{
+		
+		if(page_alloc[(addr-USER_HEAP_START)/PAGE_SIZE].is_marked == 0){
+			if(num_of_pages_unmarked==0)start_virtual_addr=addr;
+			num_of_pages_unmarked++;
+		}
+		else {
+			num_of_pages_unmarked=0;
+			start_virtual_addr=0;
+		}
+
+		if(num_of_pages_unmarked==num_of_pages)break;
+	}
+
+
+	if(num_of_pages_unmarked==num_of_pages){
+		//for testing
+		uint32 tst = start_virtual_addr;
+		for(uint32 i = 0;i<num_of_pages; i++){
+			// cprintf("will allocate page number:%d, initial mark:%d \n",(tst-USER_HEAP_START)/PAGE_SIZE,page_alloc[(tst-USER_HEAP_START)/PAGE_SIZE].is_marked);
+			
+			page_alloc[(tst-USER_HEAP_START)/PAGE_SIZE].is_marked=1;
+			tst+=PAGE_SIZE;
+		}
+		sys_createSharedObject(sharedVarName, size, isWritable, (void*)start_virtual_addr);
+		return (void*)start_virtual_addr;
+	}else{
+		return NULL;
+	}
+
 }
 
 //========================================
