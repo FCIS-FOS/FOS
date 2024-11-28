@@ -347,6 +347,7 @@ struct Env* env_create(char* user_program_name, unsigned int page_WS_size, unsig
 				wse = env_page_ws_list_create_element(e, (uint32) stackVa);
 				wse->in_which_list=IN_PAGE_WS_LIST;
 				LIST_INSERT_TAIL(&(e->page_WS_list), wse);
+				pp->wse=wse;
 				if (LIST_SIZE(&(e->page_WS_list)) == e->page_WS_max_size)
 				{
 					e->page_last_WS_element = LIST_FIRST(&(e->page_WS_list));
@@ -364,10 +365,12 @@ struct Env* env_create(char* user_program_name, unsigned int page_WS_size, unsig
 					//Since we left 1 empty location in the Active list when we loaded the program segments
 					if (LIST_SIZE(&(e->ActiveList)) < e->ActiveListSize)
 					{
+						wse->in_which_list=IN_ACTIVE_LIST;
 						LIST_INSERT_HEAD(&(e->ActiveList), wse);
 					}
 					else
 					{
+						wse->in_which_list= IN_SECOND_LIST;
 						LIST_INSERT_HEAD(&(e->SecondList), wse);
 					}
 				}
@@ -745,6 +748,7 @@ static int program_segment_alloc_map_copy_workingset(struct Env *e, struct Progr
 		wse->time_stamp = 0;
 		wse->in_which_list=IN_PAGE_WS_LIST;
 		LIST_INSERT_TAIL(&(e->page_WS_list), wse);
+		p->wse=wse;
 
 #else
 		LOG_STATMENT(cprintf("Updating working set entry # %d",e->page_last_WS_index));

@@ -81,14 +81,16 @@ void free(void* virtual_address)
   		free_block((void *)virtual_address);
  	}
  	else if (virtual_addr>=myEnv->uheap_limit+PAGE_SIZE&&virtual_addr<USER_HEAP_MAX){
-			uint32 start=page_alloc[(ROUNDDOWN(virtual_addr,PAGE_SIZE)-USER_HEAP_START)/PAGE_SIZE].start_va;/////////////////// miss calulate from Env
-			uint32 size=page_alloc[(ROUNDDOWN(virtual_addr,PAGE_SIZE)-USER_HEAP_START)/PAGE_SIZE].size;
-			sys_free_user_mem(start,size);
-			uint32 va_page_start=ROUNDDOWN(virtual_addr,PAGE_SIZE);
-			uint32 num_of_pages= ROUNDUP(size,PAGE_SIZE)/PAGE_SIZE;
-			for(uint32 current_page=va_page_start;current_page<va_page_start+(num_of_pages*PAGE_SIZE);current_page+=PAGE_SIZE){
-				page_alloc[(current_page-USER_HEAP_START)/PAGE_SIZE].is_marked=0;
-			}
+		cprintf("parameter in free %p\n",virtual_addr);
+		uint32 start=page_alloc[(ROUNDDOWN(virtual_addr,PAGE_SIZE)-USER_HEAP_START)/PAGE_SIZE].start_va;/////////////////// miss calulate from Env
+		uint32 size=page_alloc[(ROUNDDOWN(virtual_addr,PAGE_SIZE)-USER_HEAP_START)/PAGE_SIZE].size;
+		sys_free_user_mem(start,size);
+		cprintf("hello\n");
+		uint32 va_page_start=ROUNDDOWN(virtual_addr,PAGE_SIZE);
+		uint32 num_of_pages= ROUNDUP(size,PAGE_SIZE)/PAGE_SIZE;
+		for(uint32 current_page=va_page_start;current_page<va_page_start+(num_of_pages*PAGE_SIZE);current_page+=PAGE_SIZE){
+			page_alloc[(current_page-USER_HEAP_START)/PAGE_SIZE].is_marked=0;
+		}
  	}
  	else panic("Invalid Address");
  

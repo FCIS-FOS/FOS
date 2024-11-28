@@ -156,13 +156,16 @@ void fault_handler(struct Trapframe *tf)
             int per=pt_get_page_permissions(faulted_env->env_page_directory, fault_va);
             //cprintf("%d ",per);
             if(fault_va >=(uint32)USER_LIMIT){
+				cprintf("first\n");
 				env_exit();
 			}
             if((per & PERM_PRESENT) == PERM_PRESENT &&!((per & PERM_WRITEABLE) == PERM_WRITEABLE)){
+				cprintf("second\n");
                 env_exit();
 			}
             if(fault_va>=USER_HEAP_START&&fault_va<=USER_HEAP_MAX&&((per & PERM_MARKED)!=PERM_MARKED)){
-               env_exit();
+				cprintf("third\n");
+               	env_exit();
 			}
 			// if((per & PERM_PRESENT) == PERM_PRESENT&&!((per & PERM_USER) == PERM_USER))
 			// {	
@@ -248,11 +251,14 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 		
 
 		int ret = pf_read_env_page(faulted_env,(uint32*)fault_va); 
-
+		cprintf("faulted va = %p\n",fault_va);
 		if (ret == E_PAGE_NOT_EXIST_IN_PF) 
 		{ 
-			if (!((fault_va >= USTACKBOTTOM && fault_va < USTACKTOP) || (fault_va >= USER_HEAP_START && fault_va < USER_HEAP_MAX)))
-			env_exit();
+			if (!((fault_va >= USTACKBOTTOM && fault_va < USTACKTOP) || (fault_va >= USER_HEAP_START && fault_va < USER_HEAP_MAX))){
+				cprintf("fourth\n");
+				env_exit();
+
+			}
 		}
 
 		allocate_frame(&ptr_frame_info);

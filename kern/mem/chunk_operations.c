@@ -230,7 +230,10 @@ void env_page_ws_invalidate_very_fast_boi(struct Env* e, uint32 virtual_address)
 {
 	uint32 *ptr_page_table;
 	struct FrameInfo* ptr_frame_info=get_frame_info(e->env_page_directory,virtual_address,&ptr_page_table);
-	struct WorkingSetElement* ptr_WS_element=ptr_frame_info->wse;
+	cprintf("ptr frame info wse %p\n",ptr_frame_info->wse);
+	struct WorkingSetElement* ptr_WS_element=ptr_frame_info->wse;//stops here in second iteration
+	cprintf("stop\n");
+	cprintf("ptr ws element = %p\n ",ptr_WS_element);
 	if (isPageReplacmentAlgorithmLRU(PG_REP_LRU_LISTS_APPROX))
 	{
 		if(ROUNDDOWN(ptr_WS_element->virtual_address,PAGE_SIZE) == ROUNDDOWN(virtual_address,PAGE_SIZE))
@@ -261,6 +264,7 @@ void env_page_ws_invalidate_very_fast_boi(struct Env* e, uint32 virtual_address)
 	}
 	else if (ptr_WS_element->in_which_list==IN_PAGE_WS_LIST)
 	{
+		cprintf("va of ptr_ws_element %p\n",ptr_WS_element->virtual_address);
 		if(ROUNDDOWN(ptr_WS_element->virtual_address,PAGE_SIZE) == ROUNDDOWN(virtual_address,PAGE_SIZE))
 		{
 			unmap_frame(e->env_page_directory, ptr_WS_element->virtual_address);
@@ -270,9 +274,7 @@ void env_page_ws_invalidate_very_fast_boi(struct Env* e, uint32 virtual_address)
 				e->page_last_WS_element = LIST_NEXT(ptr_WS_element);
 			}
 			LIST_REMOVE(&(e->page_WS_list), ptr_WS_element);
-
 			kfree(ptr_WS_element);
-
 
 		}
 
@@ -292,6 +294,7 @@ void free_user_mem(struct Env* e, uint32 virtual_address, uint32 size)
 	// panic("free_user_mem() is not implemented yet...!!");
 	uint32 va_page_start=ROUNDDOWN(virtual_address,PAGE_SIZE);
 	uint32 num_of_pages= ROUNDUP(size,PAGE_SIZE)/PAGE_SIZE;
+	uint32 iteration=0;
 	for(uint32 current_page=va_page_start;current_page<va_page_start+(num_of_pages*PAGE_SIZE);current_page+=PAGE_SIZE){
 		//unmark the page
 		pt_set_page_permissions(e->env_page_directory,current_page,0,PERM_MARKED);
@@ -299,6 +302,9 @@ void free_user_mem(struct Env* e, uint32 virtual_address, uint32 size)
 		pf_remove_env_page(e,current_page);
 		//remove the page from the working set list
 		env_page_ws_invalidate_very_fast_boi(e,current_page);
+		cprintf("iteration number %d\n",iteration);
+		cprintf("after invalidate\n");
+		iteration++;
 	}
 	//TODO: [PROJECT'24.MS2 - BONUS#3] [3] USER HEAP [KERNEL SIDE] - O(1) free_user_mem
 }
