@@ -116,11 +116,6 @@ uint32 calculate_required_frames(uint32* page_directory, uint32 sva, uint32 size
 //======================================================
 /// functions used for USER HEAP (malloc, free, ...)
 //======================================================
-uint32 is_page_marked(struct Env* e,uint32 virtual_address){
-	uint32 * ptr_page_table=NULL;
-	return get_page_table(e->env_page_directory,virtual_address,&ptr_page_table)==TABLE_IN_MEMORY
-	&& (pt_get_page_permissions(e->env_page_directory,virtual_address) & PERM_MARKED) == PERM_MARKED;
-}
 //=====================================
 /* DYNAMIC ALLOCATOR SYSTEM CALLS */
 //=====================================
