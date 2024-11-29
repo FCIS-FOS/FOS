@@ -43,9 +43,7 @@ int getSizeOfSharedObject(int32 ownerID, char* shareName)
 	//	a) If found, return size of shared object
 	//	b) Else, return E_SHARED_MEM_NOT_EXISTS
 	//
-	cprintf("4\n");
 	struct Share* ptr_share = get_share(ownerID, shareName);
-	cprintf("4\n");
 	if (ptr_share == NULL)
 		return E_SHARED_MEM_NOT_EXISTS;
 	else
@@ -124,9 +122,7 @@ struct Share* get_share(int32 ownerID, char* name)
 	
     struct Share* current=NULL;
     LIST_FOREACH(current, &AllShares.shares_list) {
-		// cprintf("current owner id %d, and owner id %d, currnet name %s, name %s\n",current->ownerID,ownerID,current->name,name);
         if (current->ownerID == ownerID && strlen(name)==strlen(current->name) && strcmp(current->name,name)==0) { 
-			// cprintf("break\n");	
 			return current;
 		}
 
@@ -212,12 +208,9 @@ int createSharedObject(int32 ownerID, char* shareName, uint32 size, uint8 isWrit
 		new_shared_obj->framesStorage[i] = ptr_frame_info;
 
 		map_frame(myenv->env_page_directory, ptr_frame_info, mapping_virtual_address, PERM_WRITEABLE|PERM_PRESENT|PERM_USER);
-		// page_alloc[(mapping_virtual_address-USER_HEAP_START)/PAGE_SIZE].is_marked=1;
-		// cprintf("create at page:%d, isMarked=%d \n",(mapping_virtual_address-USER_HEAP_START)/PAGE_SIZE,page_alloc[(mapping_virtual_address-USER_HEAP_START)/PAGE_SIZE].is_marked);
 
 		mapping_virtual_address += PAGE_SIZE;
 	} 
-	cprintf("create shared object new shared obj variable %p\n",new_shared_obj);
 	//->ID = (uint32)virtual_address | 0x80000000;
 
 	return new_shared_obj->ID;
@@ -231,17 +224,15 @@ int createSharedObject(int32 ownerID, char* shareName, uint32 size, uint8 isWrit
 //======================
 int getSharedObject(int32 ownerID, char* shareName, void* virtual_address)
 {
-	cprintf("in\n");
 	//TODO: [PROJECT'24.MS2 - #21] [4] SHARED MEMORY [KERNEL SIDE] - getSharedObject()
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
 	// panic("getSharedObject is not implemented yet");
 	//Your Code is Here...
 	struct Env* myenv = get_cpu_proc(); //The calling environment
 	struct Share *current_share=NULL,*save_share=NULL;
+
 	//protect the shared list
-	// if(!holding_spinlock(&AllShares.shareslock)){
-		acquire_spinlock(&AllShares.shareslock);
-	// }
+	acquire_spinlock(&AllShares.shareslock);
 	LIST_FOREACH(current_share,&AllShares.shares_list){
 		//owner id matches , names have the same length and match
 		if(current_share->ownerID==ownerID && 
@@ -253,9 +244,8 @@ int getSharedObject(int32 ownerID, char* shareName, void* virtual_address)
 		}
 	}
 	//release the gaurd
-	// if(!holding_spinlock(&AllShares.shareslock)){
-		release_spinlock(&AllShares.shareslock);
-	// }
+	release_spinlock(&AllShares.shareslock);
+
 	//didnt find the shared object
 	if(save_share==NULL){
 		return E_SHARED_MEM_NOT_EXISTS;
