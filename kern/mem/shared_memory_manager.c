@@ -91,7 +91,7 @@ struct Share* create_share(int32 ownerID, char* shareName, uint32 size, uint8 is
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
 	//panic("create_share is not implemented yet");
 	//Your Code is Here...
-    struct Share * share = (struct Share *)kmalloc(size);
+    struct Share * share = (struct Share *)kmalloc(sizeof(struct Share));
 	if(share == NULL)
 	 return NULL;
 	share->references=1;
@@ -124,9 +124,9 @@ struct Share* get_share(int32 ownerID, char* name)
 	
     struct Share* current=NULL;
     LIST_FOREACH(current, &AllShares.shares_list) {
-		cprintf("current owner id %d, and owner id %d, currnet name %s, name %s\n",current->ownerID,ownerID,current->name,name);
+		// cprintf("current owner id %d, and owner id %d, currnet name %s, name %s\n",current->ownerID,ownerID,current->name,name);
         if (current->ownerID == ownerID && strlen(name)==strlen(current->name) && strcmp(current->name,name)==0) { 
-			cprintf("break\n");	
+			// cprintf("break\n");	
 			return current;
 		}
 
@@ -239,9 +239,9 @@ int getSharedObject(int32 ownerID, char* shareName, void* virtual_address)
 	struct Env* myenv = get_cpu_proc(); //The calling environment
 	struct Share *current_share=NULL,*save_share=NULL;
 	//protect the shared list
-	if(!holding_spinlock(&AllShares.shareslock)){
+	// if(!holding_spinlock(&AllShares.shareslock)){
 		acquire_spinlock(&AllShares.shareslock);
-	}
+	// }
 	LIST_FOREACH(current_share,&AllShares.shares_list){
 		//owner id matches , names have the same length and match
 		if(current_share->ownerID==ownerID && 
@@ -253,9 +253,9 @@ int getSharedObject(int32 ownerID, char* shareName, void* virtual_address)
 		}
 	}
 	//release the gaurd
-	if(!holding_spinlock(&AllShares.shareslock)){
+	// if(!holding_spinlock(&AllShares.shareslock)){
 		release_spinlock(&AllShares.shareslock);
-	}
+	// }
 	//didnt find the shared object
 	if(save_share==NULL){
 		return E_SHARED_MEM_NOT_EXISTS;
@@ -269,7 +269,7 @@ int getSharedObject(int32 ownerID, char* shareName, void* virtual_address)
 		perm|=PERM_WRITEABLE;
 	}
 	//map each page to a shared frame
-	for(uint32 i =0;i<number_of_frames;i++){
+	for(uint32 i =0;i<num_of_frames;i++){
 		map_frame(myenv->env_page_directory,save_share->framesStorage[i],current_page,perm);
 		current_page+=PAGE_SIZE;
 	}
