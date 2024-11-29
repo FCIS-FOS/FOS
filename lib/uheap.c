@@ -130,16 +130,12 @@ void* smalloc(char *sharedVarName, uint32 size, uint8 isWritable)
 
 
 	if(num_of_pages_unmarked==num_of_pages){
-		//for testing
-		uint32 tst = start_virtual_addr;
+		uint32 adr = start_virtual_addr;
 		for(uint32 i = 0;i<num_of_pages; i++){
-			// cprintf("will allocate page number:%d, initial mark:%d \n",(tst-USER_HEAP_START)/PAGE_SIZE,page_alloc[(tst-USER_HEAP_START)/PAGE_SIZE].is_marked);
-			
-			page_alloc[(tst-USER_HEAP_START)/PAGE_SIZE].is_marked=1;
-			tst+=PAGE_SIZE;
+			page_alloc[(adr-USER_HEAP_START)/PAGE_SIZE].is_marked=1;
+			adr+=PAGE_SIZE;
 		}
 		uint32 ret =sys_createSharedObject(sharedVarName, size, isWritable, (void*)start_virtual_addr);
-		cprintf("return %d\n",ret);
 		if(ret==E_NO_SHARE || ret == E_SHARED_MEM_EXISTS){
 			return NULL;
 		}
@@ -159,17 +155,13 @@ void* sget(int32 ownerEnvID, char *sharedVarName)
 	// Write your code here, remove the panic and write your code
 	// panic("sget() is not implemented yet...!!");
 	
-	cprintf("in sget\n");
 	int size= sys_getSizeOfSharedObject(ownerEnvID,sharedVarName);
-	cprintf("in sget2\n");
-	size = ROUNDUP((uint32)size,PAGE_SIZE);
 	if(size == E_SHARED_MEM_NOT_EXISTS||size == 0)return NULL;
-	cprintf("1\n");
 	uint32 start_page_allocator=myEnv->uheap_limit+PAGE_SIZE;
 	uint32 num_of_pages=ROUNDUP(size,PAGE_SIZE)/PAGE_SIZE;
 	uint32 num_of_pages_unmarked=0;
 	uint32 start_virtual_addr=0;
-	cprintf("2\n");
+
 	for (uint32 addr = myEnv->uheap_limit+PAGE_SIZE; addr < USER_HEAP_MAX; addr+=PAGE_SIZE)
 	{
 			if(page_alloc[(addr-USER_HEAP_START)/PAGE_SIZE].is_marked==0){
@@ -184,14 +176,19 @@ void* sget(int32 ownerEnvID, char *sharedVarName)
 		if(num_of_pages_unmarked==num_of_pages)break;
 	}
 	if(num_of_pages_unmarked==num_of_pages){
+
+		uint32 adr = start_virtual_addr;
+		for(uint32 i=0;i<num_of_pages;i++){
+			page_alloc[(adr-USER_HEAP_START)/PAGE_SIZE].is_marked = 1;
+			adr+=PAGE_SIZE;
+		}
+
 		int id = sys_getSharedObject(ownerEnvID,sharedVarName,(void *)start_virtual_addr);
-		if(id == E_SHARED_MEM_NOT_EXISTS)
-		{
-		return NULL;
+		if(id == E_SHARED_MEM_NOT_EXISTS){
+			return NULL;
 		}
 		return (void *)start_virtual_addr;
 	}
-	cprintf("3\n");
 	return NULL;
 
 }
