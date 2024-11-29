@@ -121,13 +121,16 @@ struct Share* create_share(int32 ownerID, char* shareName, uint32 size, uint8 is
 //	b) else: NULL
 struct Share* get_share(int32 ownerID, char* name)
 {
-    struct Share* current;
-
+	
+    struct Share* current=NULL;
     LIST_FOREACH(current, &AllShares.shares_list) {
-        if (current->ownerID == ownerID && current->name == name) { cprintf("break\n");	return current;}
-		cprintf("in loop\n");
+		cprintf("current owner id %d, and owner id %d, currnet name %s, name %s\n",current->ownerID,ownerID,current->name,name);
+        if (current->ownerID == ownerID && strlen(name)==strlen(current->name) && strcmp(current->name,name)==0) { 
+			cprintf("break\n");	
+			return current;
+		}
+
     }
-	cprintf("out loop\n");
 	return NULL;
 
 }
@@ -214,7 +217,7 @@ int createSharedObject(int32 ownerID, char* shareName, uint32 size, uint8 isWrit
 
 		mapping_virtual_address += PAGE_SIZE;
 	} 
-
+	cprintf("create shared object new shared obj variable %p\n",new_shared_obj);
 	//->ID = (uint32)virtual_address | 0x80000000;
 
 	return new_shared_obj->ID;
@@ -233,7 +236,6 @@ int getSharedObject(int32 ownerID, char* shareName, void* virtual_address)
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
 	// panic("getSharedObject is not implemented yet");
 	//Your Code is Here...
-
 	struct Env* myenv = get_cpu_proc(); //The calling environment
 	struct Share *current_share=NULL,*save_share=NULL;
 	//protect the shared list
@@ -244,7 +246,7 @@ int getSharedObject(int32 ownerID, char* shareName, void* virtual_address)
 		//owner id matches , names have the same length and match
 		if(current_share->ownerID==ownerID && 
 		strlen(shareName)==strlen(current_share->name) && 
-		strcmp(shareName,current_share->name))
+		strcmp(shareName,current_share->name)==0)
 		{
 			save_share=current_share;
 			break;
@@ -271,6 +273,7 @@ int getSharedObject(int32 ownerID, char* shareName, void* virtual_address)
 		map_frame(myenv->env_page_directory,save_share->framesStorage[i],current_page,perm);
 		current_page+=PAGE_SIZE;
 	}
+	save_share->references++;
 	// retrun the share id (might need to mask it if its not masked)
 	uint32 mask =0x7FFFFFFF;
 	return save_share->ID & mask;

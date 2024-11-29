@@ -1,6 +1,4 @@
 #include <inc/lib.h>
-struct allocations page_alloc[(USER_HEAP_MAX-USER_HEAP_START)/PAGE_SIZE];
-
 //==================================================================================//
 //============================ REQUIRED FUNCTIONS ==================================//
 //==================================================================================//
@@ -109,6 +107,7 @@ void* smalloc(char *sharedVarName, uint32 size, uint8 isWritable)
 	//TODO: [PROJECT'24.MS2 - #18] [4] SHARED MEMORY [USER SIDE] - smalloc()
 	// Write your code here, remove the panic and write your code
 	// panic("smalloc() is not implemented yet...!!");
+	
 	uint32 start_page_allocator=myEnv->uheap_limit+PAGE_SIZE;
 	uint32 num_of_pages=ROUNDUP(size,PAGE_SIZE)/PAGE_SIZE;
 	uint32 num_of_pages_unmarked=0;
@@ -139,7 +138,11 @@ void* smalloc(char *sharedVarName, uint32 size, uint8 isWritable)
 			page_alloc[(tst-USER_HEAP_START)/PAGE_SIZE].is_marked=1;
 			tst+=PAGE_SIZE;
 		}
-		sys_createSharedObject(sharedVarName, size, isWritable, (void*)start_virtual_addr);
+		uint32 ret =sys_createSharedObject(sharedVarName, size, isWritable, (void*)start_virtual_addr);
+		cprintf("return %d\n",ret);
+		if(ret==E_NO_SHARE || ret == E_SHARED_MEM_EXISTS){
+			return NULL;
+		}
 		return (void*)start_virtual_addr;
 	}else{
 		return NULL;
