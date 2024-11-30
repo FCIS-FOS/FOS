@@ -459,8 +459,10 @@ void *realloc_block_FF(void* va, uint32 new_size)
 	if (new_size<16&&new_size!=8)new_size=16;
 	if (va == NULL)//In case the address is null.
 	{
-		if(new_size==8)
-		 return NULL;
+		if(new_size==8){
+			free_block(va);
+		 	return NULL;
+		}
 		else //must be greater than 0
 		 return alloc_block_FF(new_size-8);
 	}
