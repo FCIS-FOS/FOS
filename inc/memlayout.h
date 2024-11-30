@@ -215,7 +215,8 @@ struct FrameInfo {
 	// these two help in Kfree and kheap_virtual_address
 	uint32 allocStart;
 	uint32 allocSize;
-
+	//for free user mem to remove it from the list in o(1)
+	struct WorkingSetElement* wse;
 
 	struct Env *proc;
 	uint32 bufferedVA;
