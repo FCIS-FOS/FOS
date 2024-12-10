@@ -51,7 +51,7 @@ void wakeup_one(struct Channel* chan)
     if (queue_size(&(chan->queue))) {  // Check if there are any processes waiting on the channel
         acquire_spinlock(&ProcessQueues.qlock);  // Lock the queue to protect it
         struct Env *temp = dequeue(&(chan->queue));  // Remove one process from the waiting queue
-        sched_insert_ready0(temp);  // Add the process to the ready queue so it can run
+        sched_insert_ready(temp);  // Add the process to the ready queue so it can run
         release_spinlock(&ProcessQueues.qlock);  // Unlock the queue
     }
 }
