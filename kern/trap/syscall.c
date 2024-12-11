@@ -361,13 +361,16 @@ void sys_set_uheap_strategy(uint32 heapStrategy)
 /* SEMAPHORES SYSTEM CALLS */
 /*******************************/
 //[PROJECT'24.MS3] ADD SUITABLE CODE HERE
-
+void sys_init_queue(struct Env_Queue* queue){
+init_queue(queue);
+}
 
 /*******************************/
 /* SHARED MEMORY SYSTEM CALLS */
 /*******************************/
 int sys_createSharedObject(char* shareName, uint32 size, uint8 isWritable, void* virtual_address)
 {
+	
 	return createSharedObject(cur_env->env_id, shareName, size, isWritable, virtual_address);
 }
 
@@ -528,6 +531,10 @@ uint32 syscall(uint32 syscallno, uint32 a1, uint32 a2, uint32 a3, uint32 a4, uin
 	case SYS_allocate_user_mem:
 		sys_allocate_user_mem(a1, a2);
 		return 0;
+		break;
+	case SYS_init_queue:
+		sys_init_queue((struct Env_Queue*)a1);
+		return 0; 
 		break;
 	//======================================================================
 	case SYS_cputs:

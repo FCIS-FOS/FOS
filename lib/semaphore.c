@@ -1,7 +1,6 @@
 // User-level Semaphore
 
 #include "inc/lib.h"
-#include "sched_helpers.h"
 struct semaphore create_semaphore(char *semaphoreName, uint32 value)
 {
 	//TODO: [PROJECT'24.MS3 - #02] [2] USER-LEVEL SEMAPHORE - create_semaphore
@@ -22,11 +21,10 @@ struct semaphore create_semaphore(char *semaphoreName, uint32 value)
 	}
 	priv_data->count=value;
 	priv_data->lock=0;
-	strcpy(&priv_data->name,semaphoreName);
+	strcpy(priv_data->name,semaphoreName);
 	
-	init_queue(&priv_data->queue);
-	
-	struct semaphore semaphores;/*= (struct semaphore*)smalloc(semaphoreName,sizeof(struct semaphore),1)*/
+	sys_init_queue(&priv_data->queue);
+	/*= (struct semaphore*)smalloc(semaphoreName,sizeof(struct semaphore),1)*/
 	semaphores.semdata=priv_data;
 	return semaphores; 
 	//Your Code is Here...
