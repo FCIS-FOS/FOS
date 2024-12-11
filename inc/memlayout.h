@@ -16,7 +16,7 @@
 
 /*2016*/
 #define USE_KHEAP 1
-
+#define PGFLTEMP (UTEMP - PAGE_SIZE)
 // Global descriptor numbers
 #define GD_KT     0x08     // kernel text
 #define GD_KD     0x10     // kernel data

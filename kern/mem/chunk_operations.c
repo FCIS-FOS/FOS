@@ -264,6 +264,7 @@ void env_page_ws_invalidate_very_fast_boi(struct Env* e, uint32 virtual_address)
 	}
 	else if (ptr_WS_element->in_which_list==IN_PAGE_WS_LIST)
 	{
+		
 		if(ROUNDDOWN(ptr_WS_element->virtual_address,PAGE_SIZE) == ROUNDDOWN(virtual_address,PAGE_SIZE))
 		{
 			unmap_frame(e->env_page_directory, ptr_WS_element->virtual_address);
@@ -274,7 +275,7 @@ void env_page_ws_invalidate_very_fast_boi(struct Env* e, uint32 virtual_address)
 			}
 			LIST_REMOVE(&(e->page_WS_list), ptr_WS_element);
 			kfree(ptr_WS_element);
-
+			cprintf("FREE-------------------------------------------------------------------------->\n");
 		}
 	}
 }

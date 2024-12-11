@@ -85,6 +85,8 @@ void initialize_disk_page_file()
 		//disk_frames_info[i].references = 0;
 		LIST_INSERT_HEAD(&DiskFrameLists.disk_free_frame_list, &disk_frames_info[i]);
 	}
+
+	init_spinlock(&DiskFrameLists.dfllock, "Disk FrameList Lock");
 }
 
 //
@@ -133,6 +135,7 @@ int allocate_disk_frame(uint32 *dfn)
 //
 // Return a frame to the disk_free_frame_list.
 //
+
 void free_disk_frame(uint32 dfn)
 {
 	// Fill this function in
@@ -393,30 +396,32 @@ int pf_special_update_env_modified_page(struct Env* ptr_env, uint32 virtual_addr
 int pf_read_env_page(struct Env* ptr_env, void* virtual_address)
 {
 	uint32 *ptr_disk_page_table;
-
+	
 	//ROUND DOWN it on 4 KB boundary in order to read the entire page starting from its first address.
 	virtual_address = ROUNDDOWN(virtual_address, PAGE_SIZE);
-
+	//cprintf("va=%x\n",virtual_address);
+	//cprintf("1\n");
 	if( ptr_env->disk_env_pgdir == 0) return E_PAGE_NOT_EXIST_IN_PF;
-
+	//cprintf("2\n");
 	get_disk_page_table(ptr_env->disk_env_pgdir, (uint32) virtual_address, 0, &ptr_disk_page_table);
 	if(ptr_disk_page_table == 0) return E_PAGE_NOT_EXIST_IN_PF;
-
+	//cprintf("3\n");
 	uint32 dfn=ptr_disk_page_table[PTX(virtual_address)];
-
+	//cprintf("4\n");
 	if( dfn == 0) return E_PAGE_NOT_EXIST_IN_PF;
-
+	//cprintf("5\n");
+	//cprintf("read=%d\n",read_disk_page(dfn, virtual_address));
 	int disk_read_error = read_disk_page(dfn, virtual_address);
-
+	//cprintf("6\n");
 	//reset modified bit to 0: because FOS copies the placed or replaced page from
 	//HD to memory, the page modified bit is set to 1, but we want the modified bit to be
 	// affected only by "user code" modifications, not our (FOS kernel) modifications
 	pt_set_page_permissions(ptr_env->env_page_directory, (uint32)virtual_address, 0, PERM_MODIFIED);
-
+	//cprintf("7\n");
 	//2020
 	ptr_env->nPageIn++ ;
 	//======================
-
+	//cprintf("8\n");
 	return disk_read_error;
 }
 

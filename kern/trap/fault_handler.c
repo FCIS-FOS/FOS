@@ -11,7 +11,10 @@
 #include <kern/cpu/cpu.h>
 #include <kern/disk/pagefile_manager.h>
 #include <kern/mem/memory_manager.h>
-
+#include<kern/mem/kheap.h>
+#include<kern/mem/working_set_manager.h>
+#include<kern/mem/chunk_operations.h>
+#include<inc/uheap.h>
 //2014 Test Free(): Set it to bypass the PAGE FAULT on an instruction with this length and continue executing the next one
 // 0 means don't bypass the PAGE FAULT
 uint8 bypassInstrLength = 0;
@@ -71,6 +74,7 @@ void fault_handler(struct Trapframe *tf)
 	/******************************************************/
 	// Read processor's CR2 register to find the faulting address
 	uint32 fault_va = rcr2();
+	//cprintf("first=%x\n",fault_va);
 	//	cprintf("\n************Faulted VA = %x************\n", fault_va);
 	//	print_trapframe(tf);
 	/******************************************************/
@@ -156,13 +160,16 @@ void fault_handler(struct Trapframe *tf)
             int per=pt_get_page_permissions(faulted_env->env_page_directory, fault_va);
             //cprintf("%d ",per);
             if(fault_va >=(uint32)USER_LIMIT){
+				//cprintf("invalid fault va=%x\n",fault_va);
 				env_exit();
 			}
             if((per & PERM_PRESENT) == PERM_PRESENT &&!((per & PERM_WRITEABLE) == PERM_WRITEABLE)){
+				//cprintf("invalid pointers 2\n");
                 env_exit();
 			}
             if(fault_va>=USER_HEAP_START&&fault_va<=USER_HEAP_MAX&&((per & PERM_MARKED)!=PERM_MARKED)){
-               env_exit();
+				//cprintf("invalid pointers 3\n");           
+		       env_exit();
 			}
 			// if((per & PERM_PRESENT) == PERM_PRESENT&&!((per & PERM_USER) == PERM_USER))
 			// {	
@@ -267,6 +274,7 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 		LIST_INSERT_TAIL(&(faulted_env->page_WS_list),new_element);
 		faulted_env->page_last_WS_element = NULL;
 		if(LIST_SIZE(&(faulted_env->page_WS_list)) == faulted_env->page_WS_max_size){
+			faulted_env->page_last_WS_element->prev_next_info.le_next= LIST_FIRST(&faulted_env->page_WS_list);
 			faulted_env->page_last_WS_element = faulted_env->page_WS_list.lh_first;
 		}
 		
@@ -277,7 +285,147 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 		//refer to the project presentation and documentation for details
 		//TODO: [PROJECT'24.MS3] [2] FAULT HANDLER II - Replacement
 		// Write your code here, remove the panic and write your code
-		panic("page_fault_handler() Replacement is not implemented yet...!!");
+		struct WorkingSetElement*iterator = faulted_env->page_last_WS_element;
+		//Normal algorthim
+		//page_WS_max_sweeps=5;
+		fault_va=ROUNDDOWN(fault_va,PAGE_SIZE);
+		if(page_WS_max_sweeps>0){
+			while(1==1)
+			{
+				if((pt_get_page_permissions(faulted_env->env_page_directory,iterator->virtual_address)&PERM_USED)==PERM_USED){
+					iterator->sweeps_counter=0;
+					pt_set_page_permissions(faulted_env->env_page_directory,iterator->virtual_address,0,PERM_USED);
+				
+					iterator=LIST_NEXT(iterator);
+					if(iterator==NULL)
+						iterator=LIST_FIRST(&faulted_env->page_WS_list);
+					continue;
+				}		
+					
+				if(iterator->sweeps_counter==page_WS_max_sweeps){
+				
+					if((pt_get_page_permissions(faulted_env->env_page_directory,iterator->virtual_address)&PERM_MODIFIED)==PERM_MODIFIED){
+						uint32 *ptr_page_table;
+						struct FrameInfo *modified_page_fram_info=get_frame_info(faulted_env->env_page_directory,iterator->virtual_address,&ptr_page_table);
+						int check=pf_update_env_page(faulted_env,iterator->virtual_address,modified_page_fram_info);
+						if(check!=0)
+							panic("data didn't write on disk correctly");
+					}
+				
+					struct WorkingSetElement* new_element = env_page_ws_list_create_element(faulted_env, fault_va) ;
+					new_element->virtual_address=fault_va;
+					new_element->sweeps_counter=0;
+					new_element->in_which_list=IN_PAGE_WS_LIST;
+					
+
+					struct FrameInfo *ptr_frame_info;
+					ptr_frame_info->wse=new_element;
+					
+					allocate_frame(&ptr_frame_info);
+					map_frame(faulted_env->env_page_directory,ptr_frame_info,fault_va,PERM_USER | PERM_WRITEABLE | PERM_PRESENT);
+					pf_read_env_page(faulted_env,(void*)fault_va);
+					LIST_INSERT_AFTER(&faulted_env->page_WS_list,iterator,new_element);
+
+					//free((void*)iterator->virtual_address);
+				    env_page_ws_invalidate(faulted_env,iterator->virtual_address);
+					faulted_env->page_last_WS_element=LIST_NEXT(new_element);
+					if(faulted_env->page_last_WS_element==NULL)
+						faulted_env->page_last_WS_element=LIST_FIRST(&faulted_env->page_WS_list);
+					
+					//env_page_ws_print(faulted_env);
+					
+					break;
+				}
+
+				iterator->sweeps_counter+=1;
+				
+				iterator=LIST_NEXT(iterator);
+				if(iterator==NULL)
+					iterator=LIST_FIRST(&faulted_env->page_WS_list);
+				//env_page_ws_print(faulted_env);
+			}
+		}
+		//modified algorthim
+		else{
+			//cprintf("page_WS_max_sweeps=%d \n",page_WS_max_sweeps);
+			int real_max=page_WS_max_sweeps*-1;
+			while(1==1){
+
+				if((pt_get_page_permissions(faulted_env->env_page_directory,iterator->virtual_address)&PERM_USED)==PERM_USED){
+					iterator->sweeps_counter=0;
+					pt_set_page_permissions(faulted_env->env_page_directory,iterator->virtual_address,0,PERM_USED);
+				
+					iterator=LIST_NEXT(iterator);
+					if(iterator==NULL)
+						iterator=LIST_FIRST(&faulted_env->page_WS_list);
+					continue;
+				}	
+
+				if(iterator->sweeps_counter==real_max&&(pt_get_page_permissions(faulted_env->env_page_directory,iterator->virtual_address)&PERM_MODIFIED)!=PERM_MODIFIED){
+					
+		       		struct WorkingSetElement* new_element = env_page_ws_list_create_element(faulted_env, fault_va) ;
+					new_element->virtual_address=fault_va;
+					new_element->sweeps_counter=0;
+					new_element->in_which_list=IN_PAGE_WS_LIST;
+					
+
+					struct FrameInfo *ptr_frame_info;
+					ptr_frame_info->wse=new_element;
+
+					allocate_frame(&ptr_frame_info);
+					map_frame(faulted_env->env_page_directory,ptr_frame_info,fault_va,PERM_USER | PERM_WRITEABLE | PERM_PRESENT);
+					pf_read_env_page(faulted_env,(void*)fault_va);
+					LIST_INSERT_AFTER(&faulted_env->page_WS_list,iterator,new_element);
+
+					//free((void*)iterator->virtual_address);
+				    env_page_ws_invalidate(faulted_env,iterator->virtual_address);
+					faulted_env->page_last_WS_element=LIST_NEXT(new_element);
+					if(faulted_env->page_last_WS_element==NULL)
+						faulted_env->page_last_WS_element=LIST_FIRST(&faulted_env->page_WS_list);
+					
+				//	env_page_ws_print(faulted_env);
+					
+					break;
+				}
+				else if(iterator->sweeps_counter==real_max+1&&((pt_get_page_permissions(faulted_env->env_page_directory,iterator->virtual_address)&PERM_MODIFIED)==PERM_MODIFIED)){//replace modified page
+					//update content on disk
+					uint32 *ptr_page_table;
+					struct FrameInfo *modifiedFrame=get_frame_info(faulted_env->env_page_directory,iterator->virtual_address,&ptr_page_table);
+					pf_update_env_page(faulted_env,iterator->virtual_address,modifiedFrame);
+				
+					struct WorkingSetElement* new_element = env_page_ws_list_create_element(faulted_env, fault_va) ;
+					new_element->virtual_address=fault_va;
+					new_element->sweeps_counter=0;
+					new_element->in_which_list=IN_PAGE_WS_LIST;
+
+					struct FrameInfo *ptr_frame_info;
+					ptr_frame_info->wse=new_element;
+
+					allocate_frame(&ptr_frame_info);
+					map_frame(faulted_env->env_page_directory,ptr_frame_info,fault_va,PERM_USER | PERM_WRITEABLE | PERM_PRESENT);
+					pf_read_env_page(faulted_env,(void*)fault_va);
+					LIST_INSERT_AFTER(&faulted_env->page_WS_list,iterator,new_element);
+
+					//free((void*)iterator->virtual_address);
+				    env_page_ws_invalidate(faulted_env,iterator->virtual_address);
+					faulted_env->page_last_WS_element=LIST_NEXT(new_element);
+					if(faulted_env->page_last_WS_element==NULL)
+						faulted_env->page_last_WS_element=LIST_FIRST(&faulted_env->page_WS_list);
+					
+				//	env_page_ws_print(faulted_env);
+					
+					break;
+				}
+				
+				iterator->sweeps_counter++;
+				
+				iterator=LIST_NEXT(iterator);
+				if(iterator==NULL)
+					iterator=LIST_FIRST(&faulted_env->page_WS_list);
+	
+			}
+
+		}
 	}
 }
 

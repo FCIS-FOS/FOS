@@ -174,10 +174,29 @@ int sys_check_WS_list(uint32* WS_list_content, int actual_WS_list_size, uint32 l
 
 		cprintf("comparison star from va = %x\n",ptr_WS_element->virtual_address);
 
+		/*cprintf("MY WORKING SET:\n");
+		for (int i = 0; i < actual_WS_list_size; ++i)
+		{
+			cprintf("%d. %x\n",i,(ROUNDDOWN(ptr_WS_element->virtual_address, PAGE_SIZE)));
+			ptr_WS_element = LIST_NEXT(ptr_WS_element);
+			if (ptr_WS_element == NULL)
+				ptr_WS_element = LIST_FIRST(&(env->page_WS_list));
+		}
+
+		cprintf("ACTUAL WORKING SET:\n");
+		for (int i = 0; i < actual_WS_list_size; ++i)
+		{
+			cprintf("%d. %x\n",i,ROUNDDOWN(WS_list_content[idx_WS_list], PAGE_SIZE));
+		    idx_WS_list = (idx_WS_list + 1) % env->page_WS_max_size;
+
+		}*/
+
+
 		for (int i = 0; i < actual_WS_list_size; ++i)
 		{
 			if (ROUNDDOWN(ptr_WS_element->virtual_address, PAGE_SIZE) != ROUNDDOWN(WS_list_content[idx_WS_list], PAGE_SIZE))
 			{
+			//	cprintf("hell no\n");
 				WS_list_validation = 0;
 				break;
 			}
@@ -185,6 +204,7 @@ int sys_check_WS_list(uint32* WS_list_content, int actual_WS_list_size, uint32 l
 			ptr_WS_element = LIST_NEXT(ptr_WS_element);
 			if (ptr_WS_element == NULL)
 				ptr_WS_element = LIST_FIRST(&(env->page_WS_list));
+			//cprintf("good\n");
 		}
 	}
 	else if (chk_status == 0 || chk_status == 2)
