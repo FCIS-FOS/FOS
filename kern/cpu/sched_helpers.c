@@ -155,6 +155,7 @@ void sched_insert_ready(struct Env* env)
 	{
 		//cprintf("\nInserting %d into ready queue 0\n", env->env_id);
 		env->env_status = ENV_READY ;
+		env->time_added_in_ready_queue=timer_ticks();
 		enqueue(&(ProcessQueues.env_ready_queues[env->priority]), env);
 	}
 }

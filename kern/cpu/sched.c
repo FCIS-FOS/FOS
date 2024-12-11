@@ -384,7 +384,17 @@ void clock_interrupt_handler(struct Trapframe* tf)
 		//Your code is here
 		//Comment the following line
 		// panic("Not implemented yet");
-
+		for(uint32 i=1;i<num_of_ready_queues;i++){
+			//might change when to acquire and release the locks
+			acquire_spinlock(&ProcessQueues.qlock);
+			//might correct this equation later <-------
+			while(quantums[0]*(timer_ticks()-LIST_LAST(&ProcessQueues.env_ready_queues[i])->time_added_in_ready_queue)/1000>starvation_Threshold){
+				struct Env *env_to_promote=dequeue(&ProcessQueues.env_ready_queues[i]);
+				env_to_promote->priority--;// might change this to call the set priority function
+				sched_insert_ready(env_to_promote);
+			}
+			release_spinlock(&ProcessQueues.qlock);
+		}
 	}
 
 
