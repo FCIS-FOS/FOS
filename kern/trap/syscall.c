@@ -364,7 +364,30 @@ void sys_set_uheap_strategy(uint32 heapStrategy)
 void sys_init_queue(struct Env_Queue* queue){
 init_queue(queue);
 }
+void sys_dis_interput(uint32 op){
+	if (op==1)pushcli();
+	else if(op==0)popcli();
+}
 
+struct Env* sys_enqueue(struct Env_Queue* queue, struct Env* e, uint32 insert_ready)
+{
+	if(insert_ready)
+	{
+		enqueue(ProcessQueues.env_ready_queues, e);
+		return NULL;
+	}
+	else
+	{
+		enqueue(queue,cur_env);
+		return cur_env;
+	}
+
+}
+
+struct Env* sys_dequeue(struct Env_Queue* queue)
+{
+	return dequeue(queue);
+}
 /*******************************/
 /* SHARED MEMORY SYSTEM CALLS */
 /*******************************/
@@ -536,6 +559,19 @@ uint32 syscall(uint32 syscallno, uint32 a1, uint32 a2, uint32 a3, uint32 a4, uin
 		sys_init_queue((struct Env_Queue*)a1);
 		return 0; 
 		break;
+	case SYS_enqueue:
+		return (uint32)sys_enqueue((struct Env_Queue*)a1, (struct Env*)a2, a3);
+		//return 0; 
+		break;
+
+	case SYS_dequeue:
+		return (uint32)sys_dequeue((struct Env_Queue*)a1);
+		break;
+	case SYS_dis_interput:
+		sys_dis_interput(a1);
+		return 0;
+		break;
+
 	//======================================================================
 	case SYS_cputs:
 		sys_cputs((const char*)a1,a2,(uint8)a3);

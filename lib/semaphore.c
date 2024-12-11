@@ -50,16 +50,81 @@ void wait_semaphore(struct semaphore sem)
 {
 	//TODO: [PROJECT'24.MS3 - #04] [2] USER-LEVEL SEMAPHORE - wait_semaphore
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("wait_semaphore is not implemented yet");
+	//panic("wait_semaphore is not implemented yet");
 	//Your Code is Here...
+
+	// Acquiring Spinlock
+	cprintf("00\n");
+	sys_dis_interput(1);
+	while(xchg(&(sem.semdata->lock),1) != 0);
+	
+	cprintf("01\n");
+	
+	sem.semdata->count--;
+
+	if(sem.semdata->count < 0)
+	{
+		cprintf("10\n");
+		while(xchg(&(sem.semdata->qlock),1) != 0);
+		struct Env* current_env = sys_enqueue(&sem.semdata->queue, (struct Env*)myEnv, 0); // blocked queue
+		cprintf("11\n");
+		
+		cprintf("000\n");
+		
+		sem.semdata->lock = 0;
+		cprintf("00001\n");
+		sys_dis_interput(0);
+		
+		current_env->env_status = ENV_BLOCKED;
+		cprintf("001\n");
+	
+	}
+	else
+	{
+
+		cprintf("010\n");
+		sys_dis_interput(0);
+		sem.semdata->lock = 0;
+		
+		//  sys_dis_interput(0);
+		cprintf("011\n");
+	}
+	sem.semdata->qlock=0;
+
 }
 
 void signal_semaphore(struct semaphore sem)
 {
 	//TODO: [PROJECT'24.MS3 - #05] [2] USER-LEVEL SEMAPHORE - signal_semaphore
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("signal_semaphore is not implemented yet");
+	//panic("signal_semaphore is not implemented yet");
 	//Your Code is Here...
+
+	cprintf("s00\n");
+	sys_dis_interput(1);
+	while(xchg(&(sem.semdata->lock),1) != 0);
+	
+	
+	cprintf("s01\n");
+	sem.semdata->count++;
+	if(sem.semdata->count <= 0)
+	{
+		
+		cprintf("s10\n");
+		while(xchg(&(sem.semdata->qlock),1) != 0);
+		
+		struct Env* e = sys_dequeue(&sem.semdata->queue);
+		sem.semdata->qlock=0;
+		sys_enqueue(&sem.semdata->queue,e, 1);
+		
+		cprintf("s11\n");
+		
+		
+	}
+	cprintf("s000\n");
+	sem.semdata->lock = 0;
+	sys_dis_interput(0);
+
 }
 
 int semaphore_count(struct semaphore sem)
