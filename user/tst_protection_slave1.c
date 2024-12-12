@@ -36,7 +36,7 @@ _main(void)
 		// }
 		char initname[10] = "x";
 		char name[10] ;
-#define NUM_OF_OBJS 1000
+#define NUM_OF_OBJS 5000
 		uint32* vars[NUM_OF_OBJS];
 		for (int s = 0; s < NUM_OF_OBJS; ++s)
 		{

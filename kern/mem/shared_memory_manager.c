@@ -68,10 +68,9 @@ inline struct FrameInfo** create_frames_storage(int numOfFrames)
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
 	//panic("create_frames_storage is not implemented yet");
 	//Your Code is Here...
-		acquire_spinlock(&AllShares.shareslock);
-
+	acquire_spinlock(&AllShares.shareslock);
     struct FrameInfo **framestorge=(struct FrameInfo **)kmalloc(numOfFrames*sizeof(struct FrameInfo*));
-		release_spinlock(&AllShares.shareslock);
+	release_spinlock(&AllShares.shareslock);
 
 	if(framestorge==NULL)
 	    return NULL;
@@ -111,7 +110,9 @@ struct Share* create_share(int32 ownerID, char* shareName, uint32 size, uint8 is
 	int numOfFrames =(ROUNDUP(size,PAGE_SIZE)/PAGE_SIZE);
 	share->framesStorage=create_frames_storage(numOfFrames);
     if(share->framesStorage==NULL){
+		acquire_spinlock(&AllShares.shareslock);
 		kfree(share);
+		release_spinlock(&AllShares.shareslock);
 		return NULL;
 	}
     return share;
@@ -131,9 +132,9 @@ struct Share* get_share(int32 ownerID, char* name)
     acquire_spinlock(&AllShares.shareslock);
 	LIST_FOREACH(current, &AllShares.shares_list) {
         if (current->ownerID == ownerID && strlen(name)==strlen(current->name) && strcmp(current->name,name)==0) { 
+			release_spinlock(&AllShares.shareslock);
 			return current;
 		}
-
     }
 	release_spinlock(&AllShares.shareslock);
 
@@ -209,10 +210,10 @@ int createSharedObject(int32 ownerID, char* shareName, uint32 size, uint8 isWrit
 
 	
 	uint32 mapping_virtual_address = (uint32)virtual_address;
-	acquire_spinlock(&AllShares.shareslock);
 	for(int i = 0; i < req_frames; i++)
 	{
 		struct FrameInfo* ptr_frame_info;
+		acquire_spinlock(&AllShares.shareslock);
 
 		allocate_frame(&ptr_frame_info);
 
@@ -221,9 +222,10 @@ int createSharedObject(int32 ownerID, char* shareName, uint32 size, uint8 isWrit
 		map_frame(myenv->env_page_directory, ptr_frame_info, mapping_virtual_address, PERM_WRITEABLE|PERM_PRESENT|PERM_USER);
 
 		mapping_virtual_address += PAGE_SIZE;
-	}
-	release_spinlock(&AllShares.shareslock);
+		release_spinlock(&AllShares.shareslock);
  
+	}
+	
 	//->ID = (uint32)virtual_address | 0x80000000;
 
 	return new_shared_obj->ID;
