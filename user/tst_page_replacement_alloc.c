@@ -30,6 +30,7 @@ void _main(void)
 #else
 	panic("make sure to enable the kernel heap: USE_KHEAP=1");
 #endif
+	//cprintf("hello\n");
 	int freePages = sys_calculate_free_frames();
 	int usedDiskPages = sys_pf_calculate_allocated_pages();
 	//Reading (Not Modified)
