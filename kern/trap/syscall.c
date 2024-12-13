@@ -369,16 +369,29 @@ void sys_dis_interput(uint32 op){
 	else if(op==0)popcli();
 }
 
-struct Env* sys_enqueue(struct Env_Queue* queue, struct Env* e, uint32 insert_ready)
+struct Env* sys_enqueue(struct Env_Queue* queue, struct Env* e, uint32 insert_ready, uint32* sem_lock)
 {
+
 	if(insert_ready)
 	{
-		enqueue(ProcessQueues.env_ready_queues, e);
+		acquire_spinlock(&ProcessQueues.qlock);
+		sched_insert_ready(cur_env);
+		release_spinlock(&ProcessQueues.qlock);
 		return NULL;
 	}
 	else
 	{
+		acquire_spinlock(&ProcessQueues.qlock);
+		//pushcli();
 		enqueue(queue,cur_env);
+		cprintf("%d\n",cur_env->env_id);
+		
+		cur_env->env_status = ENV_BLOCKED;
+		*sem_lock = 0;
+		sched();
+
+		release_spinlock(&ProcessQueues.qlock);
+		
 		return cur_env;
 	}
 
@@ -386,7 +399,11 @@ struct Env* sys_enqueue(struct Env_Queue* queue, struct Env* e, uint32 insert_re
 
 struct Env* sys_dequeue(struct Env_Queue* queue)
 {
-	return dequeue(queue);
+	acquire_spinlock(&ProcessQueues.qlock);
+	struct Env* ret_env =  dequeue(queue);
+	cprintf("%d\n",ret_env->env_id);
+	release_spinlock(&ProcessQueues.qlock);
+	return ret_env;
 }
 /*******************************/
 /* SHARED MEMORY SYSTEM CALLS */
@@ -560,7 +577,7 @@ uint32 syscall(uint32 syscallno, uint32 a1, uint32 a2, uint32 a3, uint32 a4, uin
 		return 0; 
 		break;
 	case SYS_enqueue:
-		return (uint32)sys_enqueue((struct Env_Queue*)a1, (struct Env*)a2, a3);
+		return (uint32)sys_enqueue((struct Env_Queue*)a1, (struct Env*)a2, a3, (uint32*)a4);
 		//return 0; 
 		break;
 

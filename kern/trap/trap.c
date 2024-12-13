@@ -330,6 +330,7 @@ void trap(struct Trapframe *tf)
 
 	if ((tf->tf_cs & 3) == 3)
 	{
+		//cprintf("cur Id: %d \n", cur_env->env_id);
 		assert(cur_env && cur_env->env_status == ENV_RUNNING);	//environment should be exist & run
 		//cprintf("curenv->env_tf @ %x, tf param @ %x\n", curenv->env_tf , tf);
 		assert(cur_env->env_tf == tf);	//tf should be placed in the kernel stack of this process (@e->env_tf)
