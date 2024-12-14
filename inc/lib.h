@@ -84,8 +84,10 @@ void 	sys_set_uheap_strategy(uint32 heapStrategy);
 int 	sys_pf_calculate_allocated_pages(void);
 
 //Semaphores
-
-
+void sys_init_queue(struct Env_Queue* queue);
+struct Env* sys_enqueue(struct Env_Queue* queue, struct Env* e, uint32 insert_ready);
+struct Env* sys_dequeue(struct Env_Queue* queue);
+void sys_dis_interput(uint32 op,uint32 * lock);
 //Sharing
 //2017
 int 	sys_createSharedObject(char* shareName, uint32 size, uint8 isWritable, void* virtual_address);
