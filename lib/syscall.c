@@ -323,15 +323,12 @@ void sys_init_queue(struct Env_Queue* queue){
 syscall(SYS_init_queue, (uint32)queue, 0, 0, 0, 0);
 }
 
-struct Env* sys_enqueue(struct Env_Queue* queue, struct Env* e, uint32 insert_ready)
+struct Env* sys_enqueue(struct Env_Queue* queue, struct Env* e, uint32 insert_ready,uint32 *lock)
 {
-	return (struct Env*)syscall(SYS_enqueue, (uint32)queue, (uint32)e, insert_ready, 0, 0);
+	return (struct Env*)syscall(SYS_enqueue, (uint32)queue, (uint32)e, insert_ready, (uint32)lock, 0);
 }
 
 struct Env* sys_dequeue(struct Env_Queue* queue)
 {
 	return (struct Env*)syscall(SYS_dequeue, (uint32)queue, 0, 0, 0, 0);
-}
-void sys_env_blocked(){
-syscall(SYS_Env_blocked,0,0,0,0,0);
 }

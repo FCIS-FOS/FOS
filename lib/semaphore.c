@@ -61,12 +61,11 @@ void wait_semaphore(struct semaphore sem)
 	if(sem.semdata->count < 0)
 	{
 	
-		struct Env * current_env= sys_enqueue(&sem.semdata->queue, (struct Env*)myEnv, 0); // blocked queue
+		struct Env * current_env= sys_enqueue(&sem.semdata->queue, (struct Env*)myEnv, 0,&sem.semdata->lock); // blocked queue
 
-		sem.semdata->lock = 0;
-		sys_env_blocked();
+		// sem.semdata->lock = 0;
+		// sys_env_blocked();
 
-	
 	}
 	else
 	{
@@ -90,7 +89,7 @@ void signal_semaphore(struct semaphore sem)
 		
 		struct Env* e = sys_dequeue(&sem.semdata->queue);
 
-		sys_enqueue(&sem.semdata->queue,e, 1);
+		sys_enqueue(&sem.semdata->queue,e, 1,&sem.semdata->lock);
 	}
 	sem.semdata->lock = 0;
 
