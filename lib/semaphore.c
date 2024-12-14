@@ -55,59 +55,23 @@ void wait_semaphore(struct semaphore sem)
 	//panic("wait_semaphore is not implemented yet");
 	//Your Code is Here...
 
-	// Acquiring Spinlock
-//	while(sem.semdata->qlock!= 0);
-//	sem.semdata->qlock++;
-
-//	cprintf("the lock %d",sem.semdata->qlock);
-//	cprintf("00\n");
 	while(xchg(&(sem.semdata->lock),1) != 0);
-//	sys_dis_interput(1,&(sem.semdata->qlock));
-//	sem.semdata->lock=1;
-	cprintf("01\n");
-	
-	sem.semdata->count--;
 
+	sem.semdata->count--;
 	if(sem.semdata->count < 0)
 	{
-		cprintf("11111111111111111111111111111111111111111111111111\n11111111\n");
-		cprintf("10\n");
-		// while(xchg(&(sem.semdata->qlock),1) != 0);
-		// cprintf("id = %d\n",myEnv->env_id);
-		cprintf("size of queue %d\n",sem.semdata->queue.size);
+	
 		struct Env * current_env= sys_enqueue(&sem.semdata->queue, (struct Env*)myEnv, 0); // blocked queue
 
-//		 cprintf("11\n");
-//		cprintf("id = %d and addr %p\n",myEnv->env_id,myEnv);
-//
-//		cprintf("000\n");
-//
-//
-//		cprintf("00001\n");
-		
 		sem.semdata->lock = 0;
-//		sys_dis_interput(0,&(sem.semdata->qlock));
-		sys_dis_interput(1,&(sem.semdata->qlock));
-//		myEnv->env_status = ENV_BLOCKED;
-//		sys_dis_interput(0,&(sem.semdata->qlock));
-		// cprintf("001\n");
+		sys_env_blocked();
+
 	
 	}
 	else
 	{
-
-		cprintf("010\n");
-//		 sys_dis_interput(0);
-		cprintf("id = %d\n",myEnv->env_id);
-//		sem.semdata->qlock=0;
 		sem.semdata->lock = 0;
-		
-
-		// cprintf("011\n");
-//		sys_dis_interput(0,&(sem.semdata->qlock));
-//		  sys_dis_interput(0,&(sem.semdata->qlock));
 	}
-	
 }
 
 void signal_semaphore(struct semaphore sem)
@@ -116,37 +80,19 @@ void signal_semaphore(struct semaphore sem)
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
 	//panic("signal_semaphore is not implemented yet");
 	//Your Code is Here...
-//return;
-//	while(xchg(&(sem.semdata->qlock),1) != 0);
-//	sys_dis_interput(1,&(sem.semdata->qlock));
-
-
 
 
 	while(xchg(&(sem.semdata->lock),1) != 0);
-//	sys_dis_interput(1,&(sem.semdata->qlock));
-//	cprintf("s00\n");
-	cprintf("s01\n");
+
 	sem.semdata->count++;
 	if(sem.semdata->count <= 0)
 	{
 		
-		cprintf("s10\n");
-		// while(xchg(&(sem.semdata->qlock),1) != 0);
-		
 		struct Env* e = sys_dequeue(&sem.semdata->queue);
-//		cprintf("id signal = %p\n",(int)(e));
-//		sem.semdata->qlock=0;
+
 		sys_enqueue(&sem.semdata->queue,e, 1);
-		
-		cprintf("s11\n");
-		
-		
 	}
-	cprintf("s000\n");
 	sem.semdata->lock = 0;
-//	sys_dis_interput(0,&(sem.semdata->qlock));
-//	sys_dis_interput(0,&(sem.semdata->qlock));
 
 }
 

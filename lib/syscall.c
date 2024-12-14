@@ -332,6 +332,6 @@ struct Env* sys_dequeue(struct Env_Queue* queue)
 {
 	return (struct Env*)syscall(SYS_dequeue, (uint32)queue, 0, 0, 0, 0);
 }
-void sys_dis_interput(uint32 op ,uint32 * lock){
-syscall(SYS_dis_interput,op,(uint32)lock,0,0,0);
+void sys_env_blocked(){
+syscall(SYS_Env_blocked,0,0,0,0,0);
 }

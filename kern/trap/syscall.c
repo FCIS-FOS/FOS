@@ -369,28 +369,14 @@ semaphore_qlock;
 init_spinlock(&semaphore_qlock,"semaphores_qlock");
 init_spinlock(&semaphore_intr,"intr_semaphore");
 }
-void sys_dis_interput(uint32 op,uint32 *lock){
-//	pushcli();
-//acquire_spinlock(&semaphore_intr);
-	if (op==1)
-		{
-//		cprintf("the lock == %d\n",*lock);
+void sys_env_blocked(){
+	
 		acquire_spinlock(&ProcessQueues.qlock);
-//		*lock=0;
-//		cur_env->env_status=ENV_BLOCKED;
 		struct Env* env_blocked=get_cpu_proc();
 		env_blocked->env_status=ENV_BLOCKED;
 		sched();
 		release_spinlock(&ProcessQueues.qlock);
-//		pushcli();
-		}
-	else if(op==0)
-		{
-//		popcli();
-//		*lock=0;
 
-		}
-	cprintf("in locks\n");
 }
 
 struct Env* sys_enqueue(struct Env_Queue* queue, struct Env* e, uint32 insert_ready)
@@ -398,24 +384,17 @@ struct Env* sys_enqueue(struct Env_Queue* queue, struct Env* e, uint32 insert_re
 	if(insert_ready)
 	{
 		acquire_spinlock(&ProcessQueues.qlock);
-		cprintf("one\n");
 		sched_insert_ready(e);
 		release_spinlock(&ProcessQueues.qlock);
 		return NULL;
 	}
 	else
 	{
-//		acquire_spinlock(&semaphore_qlock);
-		cprintf("two\n");
 
-//		struct Env* envblock=get_cpu_proc();
-		cprintf("id = %d\n",e->env_id);
 		acquire_spinlock(&ProcessQueues.qlock);
 		enqueue(queue,get_cpu_proc());
 		release_spinlock(&ProcessQueues.qlock);
-//		envblock->env_status=ENV_BLOCKED;
-		cprintf("ok ok ok \n");
-//		release_spinlock(&semaphore_qlock);
+
 		return cur_env;
 	}
 
@@ -425,9 +404,8 @@ struct Env* sys_dequeue(struct Env_Queue* queue)
 {
 	acquire_spinlock(&ProcessQueues.qlock);
 	struct Env * deq_env= dequeue(queue);
-	cprintf("three\n");
-	cprintf("deq aid %d\n",deq_env->env_id);
 	release_spinlock(&ProcessQueues.qlock);
+
 	return deq_env;
 }
 /*******************************/
@@ -609,8 +587,8 @@ uint32 syscall(uint32 syscallno, uint32 a1, uint32 a2, uint32 a3, uint32 a4, uin
 	case SYS_dequeue:
 		return (uint32)sys_dequeue((struct Env_Queue*)a1);
 		break;
-	case SYS_dis_interput:
-		sys_dis_interput(a1,(uint32 *)a2);
+	case SYS_Env_blocked:
+		sys_env_blocked();
 		return 0;
 		break;
 

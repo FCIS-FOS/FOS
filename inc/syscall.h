@@ -55,7 +55,7 @@ enum
 	SYS_init_queue,
 	SYS_enqueue,
 	SYS_dequeue,
-	SYS_dis_interput,
+	SYS_Env_blocked,
 
 
 	//=====================================================================
