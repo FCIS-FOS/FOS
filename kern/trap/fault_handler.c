@@ -307,9 +307,8 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 					if((pt_get_page_permissions(faulted_env->env_page_directory,iterator->virtual_address)&PERM_MODIFIED)==PERM_MODIFIED){
 						uint32 *ptr_page_table;
 						struct FrameInfo *modified_page_fram_info=get_frame_info(faulted_env->env_page_directory,iterator->virtual_address,&ptr_page_table);
-						int check=pf_update_env_page(faulted_env,iterator->virtual_address,modified_page_fram_info);
-						if(check!=0)
-							panic("data didn't write on disk correctly");
+						pf_update_env_page(faulted_env,iterator->virtual_address,modified_page_fram_info);
+						
 					}
 				
 					struct WorkingSetElement* new_element = env_page_ws_list_create_element(faulted_env, fault_va) ;
@@ -317,15 +316,14 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 					new_element->sweeps_counter=0;
 					new_element->in_which_list=IN_PAGE_WS_LIST;
 					
-
 					struct FrameInfo *ptr_frame_info;
-					ptr_frame_info->wse=new_element;
+					
 					
 					allocate_frame(&ptr_frame_info);
 					map_frame(faulted_env->env_page_directory,ptr_frame_info,fault_va,PERM_USER | PERM_WRITEABLE | PERM_PRESENT);
+					ptr_frame_info->wse=new_element;
 					pf_read_env_page(faulted_env,(void*)fault_va);
 					LIST_INSERT_AFTER(&faulted_env->page_WS_list,iterator,new_element);
-
 					//free((void*)iterator->virtual_address);
 				    env_page_ws_invalidate(faulted_env,iterator->virtual_address);
 					faulted_env->page_last_WS_element=LIST_NEXT(new_element);
@@ -336,13 +334,12 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 					
 					break;
 				}
-
 				iterator->sweeps_counter+=1;
 				
 				iterator=LIST_NEXT(iterator);
 				if(iterator==NULL)
 					iterator=LIST_FIRST(&faulted_env->page_WS_list);
-				//env_page_ws_print(faulted_env);
+			 //	env_page_ws_print(faulted_env);
 			}
 		}
 		//modified algorthim
@@ -350,7 +347,6 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 			//cprintf("page_WS_max_sweeps=%d \n",page_WS_max_sweeps);
 			int real_max=page_WS_max_sweeps*-1;
 			while(1==1){
-
 				if((pt_get_page_permissions(faulted_env->env_page_directory,iterator->virtual_address)&PERM_USED)==PERM_USED){
 					iterator->sweeps_counter=0;
 					pt_set_page_permissions(faulted_env->env_page_directory,iterator->virtual_address,0,PERM_USED);
@@ -360,7 +356,6 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 						iterator=LIST_FIRST(&faulted_env->page_WS_list);
 					continue;
 				}	
-
 				if(iterator->sweeps_counter==real_max&&(pt_get_page_permissions(faulted_env->env_page_directory,iterator->virtual_address)&PERM_MODIFIED)!=PERM_MODIFIED){
 					
 		       		struct WorkingSetElement* new_element = env_page_ws_list_create_element(faulted_env, fault_va) ;
@@ -368,15 +363,13 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 					new_element->sweeps_counter=0;
 					new_element->in_which_list=IN_PAGE_WS_LIST;
 					
-
 					struct FrameInfo *ptr_frame_info;
-					ptr_frame_info->wse=new_element;
-
+				
 					allocate_frame(&ptr_frame_info);
 					map_frame(faulted_env->env_page_directory,ptr_frame_info,fault_va,PERM_USER | PERM_WRITEABLE | PERM_PRESENT);
+					ptr_frame_info->wse=new_element;
 					pf_read_env_page(faulted_env,(void*)fault_va);
 					LIST_INSERT_AFTER(&faulted_env->page_WS_list,iterator,new_element);
-
 					//free((void*)iterator->virtual_address);
 				    env_page_ws_invalidate(faulted_env,iterator->virtual_address);
 					faulted_env->page_last_WS_element=LIST_NEXT(new_element);
@@ -397,15 +390,13 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 					new_element->virtual_address=fault_va;
 					new_element->sweeps_counter=0;
 					new_element->in_which_list=IN_PAGE_WS_LIST;
-
 					struct FrameInfo *ptr_frame_info;
-					ptr_frame_info->wse=new_element;
-
+					
 					allocate_frame(&ptr_frame_info);
 					map_frame(faulted_env->env_page_directory,ptr_frame_info,fault_va,PERM_USER | PERM_WRITEABLE | PERM_PRESENT);
+					ptr_frame_info->wse=new_element;
 					pf_read_env_page(faulted_env,(void*)fault_va);
 					LIST_INSERT_AFTER(&faulted_env->page_WS_list,iterator,new_element);
-
 					//free((void*)iterator->virtual_address);
 				    env_page_ws_invalidate(faulted_env,iterator->virtual_address);
 					faulted_env->page_last_WS_element=LIST_NEXT(new_element);
@@ -418,13 +409,12 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 				}
 				
 				iterator->sweeps_counter++;
-
+				
 				iterator=LIST_NEXT(iterator);
 				if(iterator==NULL)
 					iterator=LIST_FIRST(&faulted_env->page_WS_list);
 	
 			}
-
 		}
 	}
 }
