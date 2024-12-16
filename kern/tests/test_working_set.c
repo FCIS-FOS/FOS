@@ -122,11 +122,12 @@ int sys_check_WS_list(uint32* WS_list_content, int actual_WS_list_size, uint32 l
 	struct Env* env = cur_env;
 	int WS_list_validation = 1;
 	struct WorkingSetElement* ptr_WS_element;
-
+//env_page_ws_print(env);
 	if (chk_status == 0 || chk_status == 1)
 	{
 		if(LIST_SIZE(&(env->page_WS_list)) != actual_WS_list_size)
 		{
+			
 			return WS_list_validation = 0;
 		}
 	}
@@ -135,6 +136,7 @@ int sys_check_WS_list(uint32* WS_list_content, int actual_WS_list_size, uint32 l
 	{
 		if (ROUNDDOWN(env->page_last_WS_element->virtual_address, PAGE_SIZE) != ROUNDDOWN(last_WS_element_content, PAGE_SIZE))
 		{
+			env_page_ws_print(env);
 			return WS_list_validation = 0;
 		}
 	}

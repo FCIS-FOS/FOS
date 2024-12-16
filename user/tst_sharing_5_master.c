@@ -5,7 +5,7 @@ extern volatile bool printStats;
 void
 _main(void)
 {
-	//printStats = 0;
+	printStats = 0;
 	/*********************** NOTE ****************************
 	 * WE COMPARE THE DIFF IN FREE FRAMES BY "AT LEAST" RULE
 	 * INSTEAD OF "EQUAL" RULE SINCE IT'S POSSIBLE THAT SOME

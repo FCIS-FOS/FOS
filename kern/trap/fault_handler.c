@@ -418,7 +418,7 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 				}
 				
 				iterator->sweeps_counter++;
-				
+
 				iterator=LIST_NEXT(iterator);
 				if(iterator==NULL)
 					iterator=LIST_FIRST(&faulted_env->page_WS_list);

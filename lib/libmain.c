@@ -6,11 +6,13 @@
 extern void _main(int argc, char **argv);
 
 volatile struct Env *myEnv = NULL;
+volatile bool printStats = 1;
+
 volatile char *binaryname = "(PROGRAM NAME UNKNOWN)";
 void
 libmain(int argc, char **argv)
 {
-	//printStats = 1;
+	printStats = 1;
 	int envIndex = sys_getenvindex();
 
 	myEnv = &(envs[envIndex]);
@@ -29,7 +31,7 @@ libmain(int argc, char **argv)
 	// call user main routine
 	_main(argc, argv);
 
-	/*if (printStats)
+	if (printStats)
 	{
 		sys_lock_cons();
 		{
@@ -41,7 +43,7 @@ libmain(int argc, char **argv)
 			cprintf("**************************************\n");
 		}
 		sys_unlock_cons();
-	}*/
+	}
 
 	// exit gracefully
 	exit();

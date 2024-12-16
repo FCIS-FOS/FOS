@@ -275,7 +275,6 @@ void env_page_ws_invalidate_very_fast_boi(struct Env* e, uint32 virtual_address)
 			}
 			LIST_REMOVE(&(e->page_WS_list), ptr_WS_element);
 			kfree(ptr_WS_element);
-			cprintf("FREE-------------------------------------------------------------------------->\n");
 		}
 	}
 }

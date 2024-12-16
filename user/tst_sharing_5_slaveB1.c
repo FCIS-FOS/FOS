@@ -5,7 +5,7 @@ extern volatile bool printStats;
 void
 _main(void)
 {
-	//printStats = 0;
+	printStats = 0;
 
 	/*=================================================*/
 	//Initial test to ensure it works on "PLACEMENT" not "REPLACEMENT"
