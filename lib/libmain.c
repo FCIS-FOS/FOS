@@ -12,7 +12,7 @@ volatile char *binaryname = "(PROGRAM NAME UNKNOWN)";
 void
 libmain(int argc, char **argv)
 {
-	printStats = 1;
+	//printStats = 1;
 	int envIndex = sys_getenvindex();
 
 	myEnv = &(envs[envIndex]);
