@@ -79,7 +79,7 @@ void free(void* virtual_address)
   		free_block((void *)virtual_address);
  	}
  	else if (virtual_addr>=myEnv->uheap_limit+PAGE_SIZE&&virtual_addr<USER_HEAP_MAX){
-			uint32 start=page_alloc[(ROUNDDOWN(virtual_addr,PAGE_SIZE)-USER_HEAP_START)/PAGE_SIZE].start_va;/////////////////// miss calulate from Env
+			uint32 start=page_alloc[(ROUNDDOWN(virtual_addr,PAGE_SIZE)-USER_HEAP_START)/PAGE_SIZE].start_va;
 			uint32 size=page_alloc[(ROUNDDOWN(virtual_addr,PAGE_SIZE)-USER_HEAP_START)/PAGE_SIZE].size;
 			sys_free_user_mem(start,size);
 			uint32 va_page_start=ROUNDDOWN(virtual_addr,PAGE_SIZE);
@@ -132,13 +132,16 @@ void* smalloc(char *sharedVarName, uint32 size, uint8 isWritable)
 	if(num_of_pages_unmarked==num_of_pages){
 		uint32 adr = start_virtual_addr;
 		for(uint32 i = 0;i<num_of_pages; i++){
+			page_alloc[(adr-USER_HEAP_START)/PAGE_SIZE].start_va=start_virtual_addr;
+            page_alloc[(adr-USER_HEAP_START)/PAGE_SIZE].size=size;
 			page_alloc[(adr-USER_HEAP_START)/PAGE_SIZE].is_marked=1;
 			adr+=PAGE_SIZE;
 		}
-		uint32 ret =sys_createSharedObject(sharedVarName, size, isWritable, (void*)start_virtual_addr);
-		if(ret==E_NO_SHARE || ret == E_SHARED_MEM_EXISTS){
+		uint32 ID =sys_createSharedObject(sharedVarName, size, isWritable, (void*)start_virtual_addr);
+		if(ID==E_NO_SHARE || ID == E_SHARED_MEM_EXISTS){
 			return NULL;
 		}
+		page_alloc[(start_virtual_addr-USER_HEAP_START)/PAGE_SIZE].shared_id=ID;
 		return (void*)start_virtual_addr;
 	}else{
 		return NULL;
@@ -179,7 +182,9 @@ void* sget(int32 ownerEnvID, char *sharedVarName)
 
 		uint32 adr = start_virtual_addr;
 		for(uint32 i=0;i<num_of_pages;i++){
-			page_alloc[(adr-USER_HEAP_START)/PAGE_SIZE].is_marked = 1;
+			page_alloc[(adr-USER_HEAP_START)/PAGE_SIZE].start_va=start_virtual_addr;
+            page_alloc[(adr-USER_HEAP_START)/PAGE_SIZE].size=size;
+			page_alloc[(adr-USER_HEAP_START)/PAGE_SIZE].is_marked=1;
 			adr+=PAGE_SIZE;
 		}
 
@@ -187,6 +192,7 @@ void* sget(int32 ownerEnvID, char *sharedVarName)
 		if(id == E_SHARED_MEM_NOT_EXISTS){
 			return NULL;
 		}
+		page_alloc[(start_virtual_addr-USER_HEAP_START)/PAGE_SIZE].shared_id=id;
 		return (void *)start_virtual_addr;
 	}
 	return NULL;
@@ -214,6 +220,20 @@ void sfree(void* virtual_address)
 	//TODO: [PROJECT'24.MS2 - BONUS#4] [4] SHARED MEMORY [USER SIDE] - sfree()
 	// Write your code here, remove the panic and write your code
 	// panic("sfree() is not implemented yet...!!");
+	uint32 virtual_address_int = (uint32)virtual_address;
+	uint32 start_va=page_alloc[(ROUNDDOWN(virtual_address_int,PAGE_SIZE)-USER_HEAP_START)/PAGE_SIZE].start_va;
+	start_va=ROUNDDOWN(start_va,PAGE_SIZE);
+	uint32 size=page_alloc[(ROUNDDOWN(virtual_address_int,PAGE_SIZE)-USER_HEAP_START)/PAGE_SIZE].size;
+	size= ROUNDUP(size,PAGE_SIZE);
+	// uint32 mask =0x7FFFFFFF;
+	uint32 shared_object_id=page_alloc[(start_va-USER_HEAP_START)/PAGE_SIZE].shared_id;
+	// cprintf("before free shared object\n");
+	sys_freeSharedObject(shared_object_id,(void *)start_va);
+	cprintf("after free shared object\n");
+
+	for(uint32 i=start_va;i<start_va+size;i+=PAGE_SIZE){
+		page_alloc[(i-USER_HEAP_START)/PAGE_SIZE].is_marked=0;
+	}
 }
 
 

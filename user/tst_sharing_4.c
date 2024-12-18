@@ -51,7 +51,7 @@ _main(void)
 		diff = (freeFrames - sys_calculate_free_frames());
 		if (diff < expected || diff > upperLimit)
 			{is_correct = 0; cprintf("Wrong allocation (current=%d, expected=%d): make sure that you allocate the required space in the user environment and add its frames to frames_storage", freeFrames - sys_calculate_free_frames(), expected);}
-
+		cprintf("hiiiiii\n");
 		sfree(x);
 
 		int diff2 = (freeFrames - sys_calculate_free_frames());

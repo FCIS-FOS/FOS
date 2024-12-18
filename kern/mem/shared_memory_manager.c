@@ -299,16 +299,77 @@ void free_share(struct Share* ptrShare)
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
 	// panic("free_share is not implemented yet");
 	//Your Code is Here...
-
+	acquire_spinlock(&AllShares.shareslock);
+	LIST_REMOVE(&AllShares.shares_list,ptrShare);
+	kfree(ptrShare->framesStorage);
+	kfree(ptrShare);
+	release_spinlock(&AllShares.shareslock);
 }
 //========================
 // [B2] Free Share Object:
 //========================
+int16 is_page_table_free(uint32 * page_table){
+	// cprintf("page table to free %p \n",page_table);
+	if(page_table==NULL)return -1;
+	for(uint32 i = 0;i<1024;i++){
+		// cprintf("index %d value %p\n",i,page_table[i]);
+		if((page_table[i]&(~PERM_AVAILABLE))!=0){
+			return 0;
+		}
+	}
+	// cprintf("after looping over table\n");
+	struct Env* myenv = get_cpu_proc(); //The calling environment
+	// pd_clear_page_dir_entry(myenv->env_page_directory,(uint32)page_table); // the problem is in flushing
+	
+	// cprintf("after clearing page dir entry\n");
+	kfree(page_table);
+	// unmap_frame(myenv->env_page_directory,(uint32)page_table);
+	// cprintf("after unmapping page table\n");
+	return 1;
+}
 int freeSharedObject(int32 sharedObjectID, void *startVA)
 {
 	//TODO: [PROJECT'24.MS2 - BONUS#4] [4] SHARED MEMORY [KERNEL SIDE] - freeSharedObject()
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
 	// panic("freeSharedObject is not implemented yet");
 	//Your Code is Here...
+	struct Share* current=NULL,*save=NULL;
+    acquire_spinlock(&AllShares.shareslock);
+	LIST_FOREACH(current, &AllShares.shares_list) {
+        if (current->ID == sharedObjectID) { 
+			save=current;
+			break;
+		}
+    }
+	release_spinlock(&AllShares.shareslock);
+	if(save==NULL)return 0;
+	// cprintf("After finding the share in share list\n");
+	struct Env* myenv = get_cpu_proc(); //The calling environment
+	uint32 size= save->size;
+	// uint32 num_of_frames=ROUNDUP(size,PAGE_SIZE)/PAGE_SIZE;
+	uint32 startVA_int=(uint32)startVA;
+	uint32 * current_page_table=NULL,*next_page_table=NULL;
+	get_page_table(myenv->env_page_directory,startVA_int,&current_page_table);
+	// cprintf(" first page table %p \n",current_page_table);
+	// cprintf("after get page table of first frame\n");
 
+	for(uint32 current_frame=startVA_int;current_frame<startVA_int+size;current_frame+=PAGE_SIZE){
+		get_page_table(myenv->env_page_directory,current_frame,&next_page_table);
+		unmap_frame(myenv->env_page_directory,current_frame);
+		// cprintf("before this fucking if condition\n");
+		if(current_page_table!=next_page_table){
+			is_page_table_free(current_page_table);
+			// cprintf("after this function\n");
+			current_page_table=next_page_table;
+		}
+		// cprintf("after this fucking if condition\n");
+	}
+	is_page_table_free(current_page_table);
+	// cprintf("after the loop in free shared obkect\n");
+	save->references--;
+	if(save->references==0){
+		free_share(save);
+		tlb_invalidate(myenv->env_page_directory,save);//this might be wrong <----------------
+	}
+	return 1;
 }

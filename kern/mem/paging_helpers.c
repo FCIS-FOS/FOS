@@ -101,6 +101,7 @@ void pd_set_table_unused(uint32* page_directory, uint32 virtual_address)
 
 void pd_clear_page_dir_entry(uint32* page_directory, uint32 virtual_address)
 {
+	// cprintf("index of page table %d\n",PDX(virtual_address));
 	page_directory[PDX(virtual_address)] = 0 ;
 	tlbflush();
 }

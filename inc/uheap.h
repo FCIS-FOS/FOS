@@ -14,6 +14,7 @@ struct allocations
    uint32 start_va;
    uint32 size;
    uint8 is_marked;
+   uint32 shared_id;
 };
 
 
