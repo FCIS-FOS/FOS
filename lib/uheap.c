@@ -1,9 +1,8 @@
 #include <inc/lib.h>
-
 //==================================================================================//
 //============================ REQUIRED FUNCTIONS ==================================//
 //==================================================================================//
-
+struct allocations page_alloc[(USER_HEAP_MAX-USER_HEAP_START)/PAGE_SIZE];
 //=============================================
 // [1] CHANGE THE BREAK LIMIT OF THE USER HEAP:
 //=============================================
@@ -24,7 +23,43 @@ void* malloc(uint32 size)
 	//==============================================================
 	//TODO: [PROJECT'24.MS2 - #12] [3] USER HEAP [USER SIDE] - malloc()
 	// Write your code here, remove the panic and write your code
-	panic("malloc() is not implemented yet...!!");
+	// panic("malloc() is not implemented yet...!!");
+	if(size<=DYN_ALLOC_MAX_BLOCK_SIZE){
+		return alloc_block_FF(size);
+	}
+	uint32 start_page_allocator=myEnv->uheap_limit+PAGE_SIZE;
+	uint32 num_of_pages=ROUNDUP(size,PAGE_SIZE)/PAGE_SIZE;
+	uint32 num_of_pages_unmarked=0;
+	uint32 start_virtual_addr=0;
+
+	for (uint32 addr = myEnv->uheap_limit+PAGE_SIZE; addr < USER_HEAP_MAX; addr+=PAGE_SIZE)
+	{
+		
+		if(page_alloc[(addr-USER_HEAP_START)/PAGE_SIZE].is_marked==0){
+			if(num_of_pages_unmarked==0)start_virtual_addr=addr;
+			num_of_pages_unmarked++;
+		}
+		else {
+			num_of_pages_unmarked=0;
+			start_virtual_addr=0;
+		}
+
+		if(num_of_pages_unmarked==num_of_pages)break;
+	}
+	if(num_of_pages_unmarked==num_of_pages){
+		// page_alloc[(start_virtual_addr-USER_HEAP_START)]
+		
+		sys_allocate_user_mem(start_virtual_addr,size);
+		  for(uint32 current_page=start_virtual_addr;
+        current_page<start_virtual_addr+(num_of_pages*PAGE_SIZE);
+        current_page+=PAGE_SIZE)
+        {
+            page_alloc[(current_page-USER_HEAP_START)/PAGE_SIZE].start_va=start_virtual_addr;
+            page_alloc[(current_page-USER_HEAP_START)/PAGE_SIZE].size=size;
+			page_alloc[(current_page-USER_HEAP_START)/PAGE_SIZE].is_marked=1;
+        }
+		return (void *) start_virtual_addr;
+	}
 	return NULL;
 	//Use sys_isUHeapPlacementStrategyFIRSTFIT() and	sys_isUHeapPlacementStrategyBESTFIT()
 	//to check the current strategy
@@ -36,9 +71,27 @@ void* malloc(uint32 size)
 //=================================
 void free(void* virtual_address)
 {
-	//TODO: [PROJECT'24.MS2 - #14] [3] USER HEAP [USER SIDE] - free()
-	// Write your code here, remove the panic and write your code
-	panic("free() is not implemented yet...!!");
+	 //TODO: [PROJECT'24.MS2 - #14] [3] USER HEAP [USER SIDE] - free()
+ 	// Write your code here, remove the panic and write your code
+ 	//panic("free() is not implemented yet...!!");
+	uint32 virtual_addr=(uint32)virtual_address;
+	if (virtual_addr>=USER_HEAP_START&&virtual_addr<myEnv->uheap_limit){
+  		free_block((void *)virtual_address);
+ 	}
+ 	else if (virtual_addr>=myEnv->uheap_limit+PAGE_SIZE&&virtual_addr<USER_HEAP_MAX){
+			uint32 start=page_alloc[(ROUNDDOWN(virtual_addr,PAGE_SIZE)-USER_HEAP_START)/PAGE_SIZE].start_va;/////////////////// miss calulate from Env
+			uint32 size=page_alloc[(ROUNDDOWN(virtual_addr,PAGE_SIZE)-USER_HEAP_START)/PAGE_SIZE].size;
+			sys_free_user_mem(start,size);
+			uint32 va_page_start=ROUNDDOWN(virtual_addr,PAGE_SIZE);
+			uint32 num_of_pages= ROUNDUP(size,PAGE_SIZE)/PAGE_SIZE;
+			for(uint32 current_page=va_page_start;current_page<va_page_start+(num_of_pages*PAGE_SIZE);current_page+=PAGE_SIZE){
+				page_alloc[(current_page-USER_HEAP_START)/PAGE_SIZE].is_marked=0;
+			}
+ 	}
+ 	else panic("Invalid Address");
+ 
+
+
 }
 
 
@@ -53,8 +106,44 @@ void* smalloc(char *sharedVarName, uint32 size, uint8 isWritable)
 	//==============================================================
 	//TODO: [PROJECT'24.MS2 - #18] [4] SHARED MEMORY [USER SIDE] - smalloc()
 	// Write your code here, remove the panic and write your code
-	panic("smalloc() is not implemented yet...!!");
-	return NULL;
+	// panic("smalloc() is not implemented yet...!!");
+	
+	uint32 start_page_allocator=myEnv->uheap_limit+PAGE_SIZE;
+	uint32 num_of_pages=ROUNDUP(size,PAGE_SIZE)/PAGE_SIZE;
+	uint32 num_of_pages_unmarked=0;
+	uint32 start_virtual_addr=0;
+
+	for (uint32 addr = myEnv->uheap_limit+PAGE_SIZE; addr < USER_HEAP_MAX; addr+=PAGE_SIZE)
+	{
+		
+		if(page_alloc[(addr-USER_HEAP_START)/PAGE_SIZE].is_marked == 0){
+			if(num_of_pages_unmarked==0)start_virtual_addr=addr;
+			num_of_pages_unmarked++;
+		}
+		else {
+			num_of_pages_unmarked=0;
+			start_virtual_addr=0;
+		}
+
+		if(num_of_pages_unmarked==num_of_pages)break;
+	}
+
+
+	if(num_of_pages_unmarked==num_of_pages){
+		uint32 adr = start_virtual_addr;
+		for(uint32 i = 0;i<num_of_pages; i++){
+			page_alloc[(adr-USER_HEAP_START)/PAGE_SIZE].is_marked=1;
+			adr+=PAGE_SIZE;
+		}
+		uint32 ret =sys_createSharedObject(sharedVarName, size, isWritable, (void*)start_virtual_addr);
+		if(ret==E_NO_SHARE || ret == E_SHARED_MEM_EXISTS){
+			return NULL;
+		}
+		return (void*)start_virtual_addr;
+	}else{
+		return NULL;
+	}
+
 }
 
 //========================================
@@ -64,8 +153,44 @@ void* sget(int32 ownerEnvID, char *sharedVarName)
 {
 	//TODO: [PROJECT'24.MS2 - #20] [4] SHARED MEMORY [USER SIDE] - sget()
 	// Write your code here, remove the panic and write your code
-	panic("sget() is not implemented yet...!!");
+	// panic("sget() is not implemented yet...!!");
+	
+	int size= sys_getSizeOfSharedObject(ownerEnvID,sharedVarName);
+	if(size == E_SHARED_MEM_NOT_EXISTS||size == 0)return NULL;
+	uint32 start_page_allocator=myEnv->uheap_limit+PAGE_SIZE;
+	uint32 num_of_pages=ROUNDUP(size,PAGE_SIZE)/PAGE_SIZE;
+	uint32 num_of_pages_unmarked=0;
+	uint32 start_virtual_addr=0;
+
+	for (uint32 addr = myEnv->uheap_limit+PAGE_SIZE; addr < USER_HEAP_MAX; addr+=PAGE_SIZE)
+	{
+			if(page_alloc[(addr-USER_HEAP_START)/PAGE_SIZE].is_marked==0){
+			if(num_of_pages_unmarked==0)start_virtual_addr=addr;
+			num_of_pages_unmarked++;
+		}
+		else {
+			num_of_pages_unmarked=0;
+			start_virtual_addr=0;
+		}
+
+		if(num_of_pages_unmarked==num_of_pages)break;
+	}
+	if(num_of_pages_unmarked==num_of_pages){
+
+		uint32 adr = start_virtual_addr;
+		for(uint32 i=0;i<num_of_pages;i++){
+			page_alloc[(adr-USER_HEAP_START)/PAGE_SIZE].is_marked = 1;
+			adr+=PAGE_SIZE;
+		}
+
+		int id = sys_getSharedObject(ownerEnvID,sharedVarName,(void *)start_virtual_addr);
+		if(id == E_SHARED_MEM_NOT_EXISTS){
+			return NULL;
+		}
+		return (void *)start_virtual_addr;
+	}
 	return NULL;
+
 }
 
 

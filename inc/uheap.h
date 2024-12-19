@@ -9,6 +9,15 @@
 
 //2020
 #define UHP_USE_BUDDY 0
+struct allocations
+{
+   uint32 start_va;
+   uint32 size;
+   uint8 is_marked;
+};
+
+
+
 
 void *malloc(uint32 size);
 void* smalloc(char *sharedVarName, uint32 size, uint8 isWritable);

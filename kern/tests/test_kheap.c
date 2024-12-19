@@ -2315,8 +2315,6 @@ int test_three_creation_functions()
 	return 1;
 }
 
-
-
 extern void kfreeall() ;
 
 int test_kfreeall()

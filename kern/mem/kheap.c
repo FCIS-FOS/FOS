@@ -3,7 +3,12 @@
 #include <inc/memlayout.h>
 #include <inc/dynamic_allocator.h>
 #include "memory_manager.h"
-
+#define DYNAMIC_ALLOCATOR_DS 0 //ROUNDUP(NUM_OF_KHEAP_PAGES * sizeof(struct MemBlock), PAGE_SIZE)
+#define INITIAL_KHEAP_ALLOCATIONS (DYNAMIC_ALLOCATOR_DS) //( + KERNEL_SHARES_ARR_INIT_SIZE + KERNEL_SEMAPHORES_ARR_INIT_SIZE) //
+#define INITIAL_BLOCK_ALLOCATIONS ((2*sizeof(int) + MAX(num_of_ready_queues * sizeof(uint8), DYN_ALLOC_MIN_BLOCK_SIZE)) + (2*sizeof(int) + MAX(num_of_ready_queues * sizeof(struct Env_Queue), DYN_ALLOC_MIN_BLOCK_SIZE)))
+#define ACTUAL_START ((KERNEL_HEAP_START + DYN_ALLOC_MAX_SIZE + PAGE_SIZE) + INITIAL_KHEAP_ALLOCATIONS)
+struct Page allPages[(KERNEL_HEAP_MAX-ACTUAL_START)/PAGE_SIZE];
+uint32 start_ind;
 //Initialize the dynamic allocator of kernel heap with the given start address, size & limit
 //All pages in the given range should be allocated
 //Remember: call the initialize_dynamic_allocator(..) to complete the initialization
@@ -43,7 +48,10 @@ int initialize_kheap_dynamic_allocator(uint32 daStart, uint32 initSizeToAllocate
 
 		ptr_page_table[PTX(curPage)] = 0;
 	}
-
+	// initialize the allpages array and the start index
+	allPages[0].num_of_pages=(KERNEL_HEAP_MAX-ACTUAL_START)/PAGE_SIZE;
+	allPages[0].next_index=-1;
+	start_ind=0;
 	return 0;
 }
 
@@ -128,11 +136,9 @@ void* sbrk(int numOfPages)
 	// setting the new brk
 	brk = new_brk;
 
-	// inserting the new allocated memory in the free blocks list
-	struct BlockElement* new_freeBlock = (struct BlockElement*)(old_brk);
+	// creating the new free block
 	set_block_data( (void*)old_brk, increment, 0);
-	LIST_INSERT_TAIL(&freeBlocksList, new_freeBlock);
-
+	
 	// the starting address we can allocate on is the old end block
 	return (uint32*)old_brk;
 
@@ -171,27 +177,44 @@ void* kmalloc(unsigned int size)
 	const uint32 HARD_LIMIT = limit;
 	uint32 pages = 0;
 	uint32 allocStart = HARD_LIMIT + PAGE_SIZE;
-
-
-	uint32 currentPage = HARD_LIMIT + PAGE_SIZE;
-	while(currentPage < KERNEL_HEAP_MAX){
-		if(pages == requiredPages){
+	uint32 prev=0;
+	for(uint32 i=start_ind; i!=-1;i=allPages[i].next_index)
+	{
+		//num>required ---> split
+		if(allPages[i].num_of_pages>requiredPages){
+			//move start index
+			if(i==start_ind){
+				start_ind+=requiredPages;
+				allPages[start_ind].next_index=allPages[i].next_index;
+				allPages[start_ind].num_of_pages=allPages[i].num_of_pages-requiredPages;
+			}
+			// normal allocation
+			else{
+				allPages[prev].next_index=i+requiredPages;
+				allPages[i+requiredPages].next_index=allPages[i].next_index;
+				allPages[i+requiredPages].num_of_pages=allPages[i].num_of_pages-requiredPages;
+			}
+			pages=requiredPages;
+			//the start address of allocation (hard limit + page size + (page#i * Page size))
+			allocStart+=i*PAGE_SIZE;
 			break;
 		}
-
-		if(pageIsFree((void*)currentPage)){
-			pages++;
-			currentPage += PAGE_SIZE;
-		}else{
-			if(pages<requiredPages){
-				while(currentPage<KERNEL_HEAP_MAX && !pageIsFree((void*)currentPage)){
-					currentPage+=PAGE_SIZE;
-				}
-				allocStart = currentPage;
-				pages = 0;
+		// num == required ------> take all
+		else if (allPages[i].num_of_pages==requiredPages){
+			//move start index
+			if(i==start_ind){
+				start_ind=allPages[i].next_index;
 			}
+			//normal allocation
+			else{
+				allPages[prev].next_index=allPages[i].next_index;
+			}
+			pages=requiredPages;
+			//the start address of allocation (hard limit + page size + (page#i * Page size))
+			allocStart+=i*PAGE_SIZE;
+			break;
 		}
-
+		prev=i;
 	}
 
 	if(pages!=requiredPages){
@@ -243,6 +266,8 @@ void kfree(void* virtual_address)
         uint32 * ptr_page_table=NULL;
 
         struct FrameInfo *frame_info = get_frame_info(ptr_page_directory,virtual_address_int,&ptr_page_table);
+		//cprintf("free alloc start = %x\n",frame_info->allocStart);
+		//cprintf("free alloc size = %d\n",frame_info->allocSize);
 		    // get the starting point of the page allocation and the number of pages to iterate over
         uint32 allocStart=frame_info->allocStart;
         uint32 allocSize=frame_info->allocSize;
@@ -252,12 +277,72 @@ void kfree(void* virtual_address)
             frame->mappedVA=0;
             unmap_frame(ptr_page_directory,current);
         }
+
+		uint32 as_ind=(allocStart-ACTUAL_START)/PAGE_SIZE;
+		//free address<start_ind
+		if(as_ind<start_ind){
+			allPages[as_ind].next_index=start_ind;
+			allPages[as_ind].num_of_pages=allocSize;
+			// merge with old first block
+			if(as_ind+allocSize==start_ind){
+				//cprintf("nooooooooooo\n");
+				allPages[as_ind].num_of_pages+=allPages[start_ind].num_of_pages;
+				allPages[as_ind].next_index=allPages[start_ind].next_index;
+			}
+			start_ind=as_ind;
+			
+		}
+		else{
+			// loop until free address >current block and next of current block is after free address
+			for(uint32 i = start_ind;i!=-1;i=allPages[i].next_index){
+				//free address >current block and next of current block is after free address
+				if(as_ind>i && as_ind<allPages[i].next_index){
+					//merge with the current block
+					if(allPages[i].num_of_pages+i==as_ind){
+						allPages[i].num_of_pages+=allocSize;
+						//merge with the next block
+						if(as_ind+allocSize==allPages[i].next_index){
+							allPages[i].num_of_pages+=allPages[allPages[i].next_index].num_of_pages;
+							allPages[i].next_index=allPages[allPages[i].next_index].next_index;
+						}
+					}
+					//merge with the next block
+					else if(as_ind+allocSize==allPages[i].next_index){
+						allPages[as_ind].num_of_pages=allPages[allPages[i].next_index].num_of_pages+allocSize;
+						allPages[as_ind].next_index=allPages[allPages[i].next_index].next_index;
+						allPages[i].next_index=as_ind;
+					}
+					//normal free
+					else{
+						allPages[as_ind].next_index=allPages[i].next_index;
+						allPages[i].next_index=as_ind;
+						allPages[as_ind].num_of_pages=allocSize;
+					}
+					break;
+				}
+				//free address is the last block in the chain
+				else if (as_ind>i && allPages[i].next_index==-1){
+					//merge with current block
+					if(allPages[i].num_of_pages+i==as_ind){
+						allPages[i].num_of_pages+=allocSize;
+					}
+					//normal free
+					else{
+						allPages[i].next_index=as_ind;
+						allPages[as_ind].next_index=-1;
+						allPages[as_ind].num_of_pages=allocSize;
+					}
+					break;
+				}
+			}
+		}
     }
   
 	//Virtual Address is invalid
     else{
         panic("invalid address");
     }
+	//cprintf("hello!!!!\n");
 }
 
 unsigned int kheap_physical_address(unsigned int virtual_address)
@@ -342,6 +427,244 @@ void *krealloc(void *virtual_address, uint32 new_size)
 {
 	//TODO: [PROJECT'24.MS2 - BONUS#1] [1] KERNEL HEAP - krealloc
 	// Write your code here, remove the panic and write your code
+	//PAGE AREA
+	uint32 va=(uint32)virtual_address;
+	uint32 * ptr_page_table=NULL;
+	void *new_address;
+	
+    if (virtual_address==NULL){
+		if(new_size==0)
+			return NULL;
+		//cprintf("here 2\n");
+		//cprintf("new size =%d\n",ROUNDUP(new_size,PAGE_SIZE));
+		return kmalloc(new_size);
+	}
+	else if(new_size> (KERNEL_HEAP_MAX - ACTUAL_START))
+		return NULL;
+	else if(va>=limit+PAGE_SIZE){
+		
+		struct FrameInfo *frame_info = get_frame_info(ptr_page_directory,va,&ptr_page_table);		
+		//cprintf("ONEFORALL=%x\n",frame_info);
+		 if (frame_info==NULL){
+			//cprintf("kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk");
+		 	return NULL;
+			//cprintf("here 2\n");
+		}
+    	uint32 allocSize=frame_info->allocSize;
+		//cprintf("allocsize =%d\n",allocSize*PAGE_SIZE);
+		
+		if(new_size==0){
+			kfree(virtual_address);
+			return NULL;
+     	}
+		//cprintf("new size =%d\n",ROUNDUP(new_size,PAGE_SIZE));
+		
+
+		if(new_size>allocSize*PAGE_SIZE){
+			//cprintf("uuuuuuuuuuuu\n");
+			bool moving=0;
+			//cprintf("new size =%d\n",ROUNDUP(new_size,PAGE_SIZE));
+			//cprintf("alloc size =%d\n",allocSize);
+			//cprintf("total =%d",ROUNDUP(new_size,PAGE_SIZE)/PAGE_SIZE-allocSize);
+			for(int i=0;i<ROUNDUP(new_size,PAGE_SIZE)/PAGE_SIZE-allocSize;i++){
+				if(!pageIsFree((void *)(va+PAGE_SIZE*(i+1))))
+					{cprintf("i=%d",i);moving=1;break;}
+			}
+			//cprintf("siuuuuuuuuuuuuuuu");
+			if(moving){
+				new_address=kmalloc(new_size);
+				memcpy(new_address,virtual_address,allocSize*PAGE_SIZE);
+				kfree(virtual_address);
+				return new_address;
+			}
+			else{
+				//cprintf("siuuuuuuuuuuuuuuu\n");
+				uint32 requiredPages = ROUNDUP(new_size,PAGE_SIZE)/PAGE_SIZE-allocSize;
+				//cprintf("req pages =%d\n",requiredPages);
+				const uint32 HARD_LIMIT = limit;
+				uint32 pages = 0;
+				uint32 allocStart = va;
+				uint32 prev=0;
+				//cprintf("siuuuuuuuuuuuuuuu22222\n");
+				for(uint32 i=va;i<va+(PAGE_SIZE*allocSize);i+=PAGE_SIZE){
+                    struct FrameInfo *frame = get_frame_info(ptr_page_directory,i,&ptr_page_table);
+					frame->allocSize=ROUNDUP(new_size,PAGE_SIZE)/PAGE_SIZE;
+				}
+				for(uint32 i=start_ind; i!=-1;i=allPages[i].next_index)
+				{
+					//cprintf("i=%d\n",i);
+					//num>required ---> split
+					if(allPages[i].num_of_pages>requiredPages){
+						//move start index
+						
+						if(i==start_ind){
+							//cprintf("you 2\n");
+							start_ind+=requiredPages;
+							allPages[start_ind].next_index=allPages[i].next_index;
+							allPages[start_ind].num_of_pages=allPages[i].num_of_pages-requiredPages;
+						}
+						// normal allocation
+						else{
+							allPages[prev].next_index=i+requiredPages;
+							allPages[i+requiredPages].next_index=allPages[i].next_index;
+							allPages[i+requiredPages].num_of_pages=allPages[i].num_of_pages-requiredPages;
+						}
+						pages=requiredPages;
+						//the start address of allocation (hard limit + page size + (page#i * Page size))
+						//allocStart+=i*PAGE_SIZE;
+						break;
+					}
+					// num == required ------> take all
+					else if (allPages[i].num_of_pages==requiredPages){
+						//cprintf("siuuuuuuuuu3333\n");
+						//move start index
+						if(i==start_ind){
+							start_ind=allPages[i].next_index;
+						}
+						//normal allocation
+						else{
+							allPages[prev].next_index=allPages[i].next_index;
+						}
+						pages=requiredPages;
+						//the start address of allocation (hard limit + page size + (page#i * Page size))
+						//allocStart+=i*PAGE_SIZE;
+						break;
+					}
+					//cprintf("hererrrrrr!!!\n");
+					prev=i;
+				}
+                //cprintf("you123!!!!!!\n");
+				
+				if(pages!=requiredPages){
+					return NULL;
+				}else{
+					
+					uint32 addr = allocStart+allocSize*PAGE_SIZE;
+					for(int i = 0; i<requiredPages; i++){
+						//cprintf("pages=%d",pages);
+						struct FrameInfo *frame;
+						int allocRet = allocate_frame(&frame);
+						if(allocRet == E_NO_MEM){
+							return NULL;
+						}
+
+						int mapRet = map_frame(ptr_page_directory, frame, addr, PERM_WRITEABLE|PERM_PRESENT);
+						if(mapRet == E_NO_MEM){
+							return NULL;
+						}
+						//store the info that is needed for Kfree and kheap_virtual_address
+						frame->allocStart=allocStart;
+						frame->allocSize=ROUNDUP(new_size,PAGE_SIZE)/PAGE_SIZE;
+						//to store virtual address to the frame info
+						frame->mappedVA=addr;
+						addr += PAGE_SIZE;
+					}
+					//cprintf("huuuuuuuuuuuuuuuuuuuuuu\n");
+					return (void *)allocStart;
+				}
+				
+			}
+		}
+		else if(ROUNDUP(new_size,PAGE_SIZE)<allocSize*PAGE_SIZE&&new_size>DYN_ALLOC_MAX_BLOCK_SIZE){
+        // looping over the pages and unmapping the frames they are refrencing 
+			for(uint32 current=va+ROUNDUP(new_size,PAGE_SIZE);current<va+(allocSize*PAGE_SIZE);current+=PAGE_SIZE){
+				struct FrameInfo *frame = get_frame_info(ptr_page_directory,current,&ptr_page_table);
+				frame->mappedVA=0;
+				unmap_frame(ptr_page_directory,current);
+			}
+            for(uint32 current=va;current<va+ROUNDUP(new_size,PAGE_SIZE);current+=PAGE_SIZE){
+				struct FrameInfo *frame = get_frame_info(ptr_page_directory,current,&ptr_page_table);
+				frame->allocSize=ROUNDUP(new_size,PAGE_SIZE)/PAGE_SIZE;
+			}
+			//cprintf("hey2\n");
+			uint32 as_ind=(va+ROUNDUP(new_size,PAGE_SIZE)-ACTUAL_START)/PAGE_SIZE;
+			if(as_ind<start_ind){
+				//cprintf("hey3\n");
+				allPages[as_ind].next_index=start_ind;
+				allPages[as_ind].num_of_pages=allocSize-ROUNDUP(new_size,PAGE_SIZE)/PAGE_SIZE;
+				// merge with old first block
+				if(as_ind+allocSize-ROUNDUP(new_size,PAGE_SIZE)/PAGE_SIZE==start_ind){
+					//cprintf("tst\n");
+					allPages[as_ind].num_of_pages+=allPages[start_ind].num_of_pages;
+					allPages[as_ind].next_index=allPages[start_ind].next_index;
+				}
+				start_ind=as_ind;
+				return virtual_address;
+			}
+			else{
+				//cprintf("hey3\n");
+				// loop until free address >current block and next of current block is after free address
+				for(uint32 i = start_ind;i!=-1;i=allPages[i].next_index){
+					//free address >current block and next of current block is after free address
+					if(as_ind>i && as_ind<allPages[i].next_index){
+						//merge with the current block
+					    //cprintf("hey\n");
+						//merge with the next block
+						if(as_ind+allocSize-new_size==allPages[i].next_index){
+							//cprintf("herreee!!!\n");
+							allPages[as_ind].num_of_pages=allPages[allPages[i].next_index].num_of_pages+allocSize-ROUNDUP(new_size,PAGE_SIZE)/PAGE_SIZE;
+							allPages[as_ind].next_index=allPages[allPages[i].next_index].next_index;
+							allPages[i].next_index=as_ind;
+						}
+						//normal free
+						else{
+							allPages[as_ind].next_index=allPages[i].next_index;
+							allPages[i].next_index=as_ind;
+							allPages[as_ind].num_of_pages=allocSize-ROUNDUP(new_size,PAGE_SIZE)/PAGE_SIZE;
+						}
+						break;
+					}
+					//free address is the last block in the chain
+					else if (as_ind>i && allPages[i].next_index==-1){
+						//merge with current block
+						if(allPages[i].num_of_pages+i==as_ind){
+							allPages[i].num_of_pages+=allocSize-ROUNDUP(new_size,PAGE_SIZE)/PAGE_SIZE;
+						}
+						//normal free
+						else{
+							allPages[i].next_index=as_ind;
+							allPages[as_ind].next_index=-1;
+							allPages[as_ind].num_of_pages=allocSize-ROUNDUP(new_size,PAGE_SIZE)/PAGE_SIZE;
+						}
+						break;
+					}
+				}
+				frame_info->allocSize=ROUNDUP(new_size,PAGE_SIZE);
+				return virtual_address;
+			}
+		}
+
+		else if(new_size<=DYN_ALLOC_MAX_BLOCK_SIZE){
+			
+			new_address=kmalloc(new_size);
+			memcpy(new_address,virtual_address,new_size);//cprintf("here!!!\n");
+			kfree(virtual_address);
+			return new_address;
+		}
+		return NULL;
+	}
+	else if(va<limit){
+		//cprintf("testetestets\n");
+		if(new_size==0){
+			kfree(virtual_address);
+			return NULL;
+     	}
+
+		//cprintf("get size =%d",get_block_size(virtual_address));
+		if(is_free_block(virtual_address))
+		 return NULL;
+		if(new_size>get_block_size(virtual_address)&&new_size<=DYN_ALLOC_MAX_BLOCK_SIZE)
+			return realloc_block_FF(virtual_address,new_size);
+		else if(new_size<get_block_size(virtual_address))
+			return realloc_block_FF(virtual_address,new_size);
+		else if(new_size>DYN_ALLOC_MAX_BLOCK_SIZE){
+			new_address= kmalloc(new_size);
+			memcpy(new_address,virtual_address,get_block_size(virtual_address));
+			kfree(virtual_address);
+			return new_address;
+		}
+		//cprintf("testetestets\n");
+		return NULL;
+	}
 	return NULL;
-	panic("krealloc() is not implemented yet...!!");
 }
