@@ -250,6 +250,7 @@ void sched_init_PRIRR(uint8 numOfPriorities, uint8 quantum, uint32 starvThresh)
 	//Your code is here
 	//Comment the following line
 	// panic("Not implemented yet");
+	num_of_ready_queues=numOfPriorities;
 #if USE_KHEAP
 	sched_delete_ready_queues();
 	ProcessQueues.env_ready_queues = kmalloc(num_of_ready_queues* sizeof(struct Env_Queue));
@@ -259,7 +260,6 @@ void sched_init_PRIRR(uint8 numOfPriorities, uint8 quantum, uint32 starvThresh)
 
 #endif
 
-	num_of_ready_queues=numOfPriorities;
 
 	quantums[0]=quantum;
 	kclock_set_quantum(quantums[0]);
