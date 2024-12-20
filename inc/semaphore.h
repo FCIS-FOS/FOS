@@ -14,7 +14,7 @@ struct __semdata
 
 	//lock variable protecting this count
 	uint32 lock;
-
+	uint32 qlock;
 	// For debugging: Name of semaphore.
 	char name[64];
 };
