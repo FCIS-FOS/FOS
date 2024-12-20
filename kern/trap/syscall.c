@@ -502,6 +502,10 @@ void sys_bypassPageFault(uint8 instrLength)
 	bypassInstrLength = instrLength;
 }
 
+void sys_env_set_priority(int envID, int priority){
+	env_set_priority(envID, priority);
+}
+
 
 /**************************************************************************/
 /************************* SYSTEM CALLS HANDLER ***************************/
@@ -696,7 +700,11 @@ uint32 syscall(uint32 syscallno, uint32 a1, uint32 a2, uint32 a3, uint32 a4, uin
 	case NSYSCALLS:
 		return 	-E_INVAL;
 		break;
+	case SYS_ENV_SET_PRIORITY:
+		sys_env_set_priority((int)a1, (int)a2);
+		return 0;
 	}
+
 	//panic("syscall not implemented");
 	return -E_INVAL;
 }

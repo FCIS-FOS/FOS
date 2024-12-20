@@ -53,7 +53,9 @@ enum
 	SYS_free_user_mem,
 	SYS_allocate_user_mem,
 	//=====================================================================
-	NSYSCALLS
+	NSYSCALLS,
+	//MS3 sys call
+	SYS_ENV_SET_PRIORITY
 };
 
 #endif /* !FOS_INC_SYSCALL_H */
