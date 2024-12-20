@@ -59,7 +59,9 @@ enum
 
 
 	//=====================================================================
-	NSYSCALLS
+	NSYSCALLS,
+	//MS3 sys call
+	SYS_ENV_SET_PRIORITY
 };
 
 #endif /* !FOS_INC_SYSCALL_H */
