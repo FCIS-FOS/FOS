@@ -706,9 +706,9 @@ void env_set_priority(int envID, int priority)
 
 	//Get the process of the given ID
 	struct Env* proc ;
-	envid2env(envID, &proc, 0);
+	int status = envid2env(envID, &proc, 0);
 
-	if(proc == E_BAD_ENV){
+	if(status == E_BAD_ENV){
 		panic("BAD ENV");
 	}
 
