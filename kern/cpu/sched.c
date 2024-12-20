@@ -370,20 +370,23 @@ struct Env* fos_scheduler_PRIRR()
 	//Your code is here
 	//Comment the following line
 	// panic("Not implemented yet");
+	// cprintf("hiiii\n");
 	struct Env* runningEnv = get_cpu_proc();
 	struct Env* nextEnv = NULL;
+	// cprintf("next env %p \n",nextEnv);
 	//there is a process running on the cpu
 	if(runningEnv != NULL){
 		sched_insert_ready(runningEnv);
 	}
 
 	for(int i=0; i<num_of_ready_queues; i++){
-		if(LIST_LAST(&ProcessQueues.env_ready_queues[i]) != NULL){
-			nextEnv = LIST_LAST(&ProcessQueues.env_ready_queues[i]);
-			dequeue(&ProcessQueues.env_ready_queues[i]);
-			sched_insert_ready(nextEnv);
+		if(LIST_SIZE(&ProcessQueues.env_ready_queues[i])>0){
+			nextEnv = dequeue(&ProcessQueues.env_ready_queues[i]);
+			break;
 		}
 	}
+	kclock_set_quantum(quantums[0]);
+	// cprintf("next env %p \n",nextEnv);
 
 	return nextEnv;
 
@@ -402,17 +405,19 @@ void clock_interrupt_handler(struct Trapframe* tf)
 		//Your code is here
 		//Comment the following line
 		// panic("Not implemented yet");
+		// cprintf("hi\n");
+		acquire_spinlock(&ProcessQueues.qlock);
 		for(uint32 i=1;i<num_of_ready_queues;i++){
-			//might change when to acquire and release the locks
-			acquire_spinlock(&ProcessQueues.qlock);
-			//might correct this equation later <-------
-			while(timer_ticks()-LIST_LAST(&ProcessQueues.env_ready_queues[i])->time_added_in_ready_queue>starvation_Threshold){
+			// cprintf("time of process %d and starv %d\n",)
+			while(LIST_SIZE(&ProcessQueues.env_ready_queues[i]) && timer_ticks()-LIST_LAST(&ProcessQueues.env_ready_queues[i])->time_added_in_ready_queue>starvation_Threshold){
 				struct Env *env_to_promote=dequeue(&ProcessQueues.env_ready_queues[i]);
-				env_to_promote->priority--;// might change this to call the set priority function
+				env_to_promote->priority--;
+				// cprintf("promote env %d\n",env_to_promote->env_id);
+				
 				sched_insert_ready(env_to_promote);
 			}
-			release_spinlock(&ProcessQueues.qlock);
 		}
+		release_spinlock(&ProcessQueues.qlock);
 	}
 
 

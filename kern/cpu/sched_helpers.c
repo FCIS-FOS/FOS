@@ -716,32 +716,12 @@ void env_set_priority(int envID, int priority)
 	//Comment the following line
 	// panic("Not implemented yet");
 	acquire_spinlock(&(ProcessQueues.qlock));
-	struct Env* matchedEnv;
-
+	proc->priority = priority;
 	if(proc->env_status == ENV_READY){
 		//in one of the ready q
-		for(int i=0; i<num_of_ready_queues; i++){
-			matchedEnv = find_env_in_queue(&(ProcessQueues.env_ready_queues[i]), envID);
-			if(matchedEnv != NULL){
-				sched_remove_ready(matchedEnv);
-				matchedEnv->priority = priority;
-				sched_insert_ready(matchedEnv);
-				return;
-			}
-		}
-	}else if(proc->env_status == ENV_NEW){
-		//in new q
-		matchedEnv = find_env_in_queue(&(ProcessQueues.env_new_queue), envID);
-		matchedEnv->priority = priority;
-		return;
-	}else{
-		//in exit
-		matchedEnv = find_env_in_queue(&(ProcessQueues.env_exit_queue), envID);
-		matchedEnv->priority = priority;
-		return;
-
+		sched_remove_ready(proc);
+		sched_insert_ready(proc);
 	}
-
 	release_spinlock(&(ProcessQueues.qlock));
 }
 
