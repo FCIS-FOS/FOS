@@ -249,8 +249,27 @@ void sched_init_PRIRR(uint8 numOfPriorities, uint8 quantum, uint32 starvThresh)
 	//TODO: [PROJECT'24.MS3 - #07] [3] PRIORITY RR Scheduler - sched_init_PRIRR
 	//Your code is here
 	//Comment the following line
-	panic("Not implemented yet");
+	// panic("Not implemented yet");
+	num_of_ready_queues=numOfPriorities;
+#if USE_KHEAP
+	sched_delete_ready_queues();
+	ProcessQueues.env_ready_queues = kmalloc(num_of_ready_queues* sizeof(struct Env_Queue));
+	//cprintf("sizeof(struct Env_Queue) = %x\n", sizeof(struct Env_Queue));
+	quantums = kmalloc(sizeof(uint8)) ;
+	//cprintf("num_of_ready_queues * sizeof(uint8) = %x\n", num_of_ready_queues * sizeof(uint8));
 
+#endif
+
+
+	quantums[0]=quantum;
+	kclock_set_quantum(quantums[0]);
+
+	starvation_Threshold=starvThresh;
+
+	//there might be more things to initialize here in the future <------
+	for(uint32 i =0;i<numOfPriorities;i++){
+		init_queue(&(ProcessQueues.env_ready_queues[i]));
+	}
 
 
 
@@ -364,7 +383,18 @@ void clock_interrupt_handler(struct Trapframe* tf)
 		//TODO: [PROJECT'24.MS3 - #09] [3] PRIORITY RR Scheduler - clock_interrupt_handler
 		//Your code is here
 		//Comment the following line
-		panic("Not implemented yet");
+		// panic("Not implemented yet");
+		for(uint32 i=1;i<num_of_ready_queues;i++){
+			//might change when to acquire and release the locks
+			acquire_spinlock(&ProcessQueues.qlock);
+			//might correct this equation later <-------
+			while(timer_ticks()-LIST_LAST(&ProcessQueues.env_ready_queues[i])->time_added_in_ready_queue>starvation_Threshold){
+				struct Env *env_to_promote=dequeue(&ProcessQueues.env_ready_queues[i]);
+				env_to_promote->priority--;// might change this to call the set priority function
+				sched_insert_ready(env_to_promote);
+			}
+			release_spinlock(&ProcessQueues.qlock);
+		}
 	}
 
 
