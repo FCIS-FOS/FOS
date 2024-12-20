@@ -25,6 +25,7 @@ int allocate_chunk(uint32* page_directory, uint32 va, uint32 size, uint32 perms)
 /*[2] USER CHUNKS MANIPULATION */
 /*******************************/
 void* sys_sbrk(int numOfPages);
+void env_page_ws_invalidate_very_fast_boi(struct Env* e, uint32 virtual_address);
 void free_user_mem(struct Env* e, uint32 virtual_address, uint32 size);
 void allocate_user_mem(struct Env* e, uint32 virtual_address, uint32 size);
 void move_user_mem(struct Env* e, uint32 src_virtual_address, uint32 dst_virtual_address, uint32 size);

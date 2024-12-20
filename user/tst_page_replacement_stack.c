@@ -3,7 +3,8 @@
 /************************************************************/
 
 #include <inc/lib.h>
-
+#include<lib/syscall.c>
+#include<inc/syscall.h>
 void _main(void)
 {
 	int8 arr[PAGE_SIZE*10];
@@ -16,9 +17,9 @@ void _main(void)
 	int usedDiskPages = sys_pf_calculate_allocated_pages();
 
 	int i ;
-	for (i = 0 ; i < PAGE_SIZE*10 ; i+=PAGE_SIZE/2)
+	for (i = 0 ; i < PAGE_SIZE*10 ; i+=PAGE_SIZE/2){
 		arr[i] = -1 ;
-
+	}
 
 	cprintf("checking REPLACEMENT fault handling of STACK pages... \n");
 	{

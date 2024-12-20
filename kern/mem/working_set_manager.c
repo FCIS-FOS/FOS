@@ -78,7 +78,8 @@ inline void env_page_ws_invalidate(struct Env* e, uint32 virtual_address)
 		LIST_FOREACH(wse, &(e->page_WS_list))
 		{
 			if(ROUNDDOWN(wse->virtual_address,PAGE_SIZE) == ROUNDDOWN(virtual_address,PAGE_SIZE))
-			{
+			{		
+
 				unmap_frame(e->env_page_directory, wse->virtual_address);
 
 				if (e->page_last_WS_element == wse)
@@ -88,7 +89,7 @@ inline void env_page_ws_invalidate(struct Env* e, uint32 virtual_address)
 				LIST_REMOVE(&(e->page_WS_list), wse);
 
 				kfree(wse);
-
+				//cprintf("freee_______________________________________________>\n");
 				break;
 			}
 		}

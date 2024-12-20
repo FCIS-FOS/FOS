@@ -3,6 +3,7 @@
 /* *********************************************************** */
 
 #include <inc/lib.h>
+#include<lib/syscall.c>
 
 char arr[PAGE_SIZE*12];
 char* ptr = (char* )0x0801000 ;
@@ -29,15 +30,14 @@ void _main(void)
 #else
 	panic("make sure to enable the kernel heap: USE_KHEAP=1");
 #endif
-
+	//cprintf("hello\n");
 	int freePages = sys_calculate_free_frames();
 	int usedDiskPages = sys_pf_calculate_allocated_pages();
-
 	//Reading (Not Modified)
 	char garbage1 = arr[PAGE_SIZE*11-1] ;
+	
 	char garbage2 = arr[PAGE_SIZE*12-1] ;
 	char garbage4,garbage5;
-
 	//Writing (Modified)
 	int i ;
 	for (i = 0 ; i < PAGE_SIZE*10 ; i+=PAGE_SIZE/2)
@@ -45,13 +45,17 @@ void _main(void)
 		arr[i] = -1 ;
 		/*2016: this BUGGY line is REMOVED el7! it overwrites the KERNEL CODE :( !!!*/
 		//*ptr = *ptr2 ;
+
 		/*==========================================================================*/
 		//always use pages at 0x801000 and 0x804000
 		garbage4 = *ptr + garbage5;
+		//cprintf("LOL\n");
 		garbage5 = *ptr2 + garbage4;
 		ptr++ ; ptr2++ ;
-	}
+		
 
+	}
+	//cprintf("get out\n");
 	//===================
 
 	//cprintf("Checking Allocation in Mem & Page File... \n");

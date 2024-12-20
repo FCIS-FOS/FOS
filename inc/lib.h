@@ -60,7 +60,7 @@ int 	__sys_map_frame(int32 srcenv, void *srcva, int32 dstenv, void *dstva, int p
 int 	__sys_unmap_frame(int32 envid, void *va);
 uint32 	sys_calculate_required_frames(uint32 start_virtual_address, uint32 size);
 uint32 	sys_calculate_free_frames();
-uint32 	sys_calculate_modified_frames();
+uint32 	sys3_calculate_modified_frames();
 uint32 	sys_calculate_notmod_frames();
 int		sys_calculate_pages_tobe_removed_ready_exit(uint32 WS_or_MEMORY_flag);
 void 	sys_scarce_memory();
@@ -84,8 +84,9 @@ void 	sys_set_uheap_strategy(uint32 heapStrategy);
 int 	sys_pf_calculate_allocated_pages(void);
 
 //Semaphores
-
-
+void sys_init_queue(struct Env_Queue* queue);
+struct Env* sys_enqueue(struct Env_Queue* queue, struct Env* e, uint32 insert_ready,uint32* lock);
+struct Env* sys_dequeue(struct Env_Queue* queue);
 //Sharing
 //2017
 int 	sys_createSharedObject(char* shareName, uint32 size, uint8 isWritable, void* virtual_address);
