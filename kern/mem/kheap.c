@@ -441,6 +441,7 @@ void *krealloc(void *virtual_address, uint32 new_size)
 	}
 	else if(new_size> (KERNEL_HEAP_MAX - ACTUAL_START))
 		return NULL;
+	
 	else if(va>=limit+PAGE_SIZE){
 		
 		struct FrameInfo *frame_info = get_frame_info(ptr_page_directory,va,&ptr_page_table);		

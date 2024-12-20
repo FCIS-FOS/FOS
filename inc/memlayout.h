@@ -16,7 +16,7 @@
 
 /*2016*/
 #define USE_KHEAP 1
-
+#define PGFLTEMP (UTEMP - PAGE_SIZE)
 // Global descriptor numbers
 #define GD_KT     0x08     // kernel text
 #define GD_KD     0x10     // kernel data
@@ -153,6 +153,7 @@
 #define USTABDATA	(PTSIZE / 2)
 
 //2016
+#define PGFLTEMP (UTEMP - PAGE_SIZE)	
 #define KERNEL_HEAP_START 0xF6000000
 #define KERNEL_HEAP_MAX 0xFFFFF000
 //KHEAP pages number

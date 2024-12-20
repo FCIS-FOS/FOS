@@ -1,6 +1,6 @@
 
 #include <inc/lib.h>
-
+#include<lib/syscall.c>
 uint32 ws_size_first=0;
 
 //Functions Declarations

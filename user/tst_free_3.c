@@ -3,6 +3,7 @@
 /* MAKE SURE MAX_MODIFIED_LIST_COUNT = 1000 */
 /* *********************************************************** */
 #include <inc/lib.h>
+#include<lib/syscall.c>
 
 #define numOfAccessesFor3MB 7
 #define numOfAccessesFor8MB 4
