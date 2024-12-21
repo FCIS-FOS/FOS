@@ -68,9 +68,9 @@ inline struct FrameInfo** create_frames_storage(int numOfFrames)
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
 	//panic("create_frames_storage is not implemented yet");
 	//Your Code is Here...
-	acquire_spinlock(&AllShares.shareslock);
+	//acquire_spinlock(&AllShares.shareslock);
     struct FrameInfo **framestorge=(struct FrameInfo **)kmalloc(numOfFrames*sizeof(struct FrameInfo*));
-	release_spinlock(&AllShares.shareslock);
+	//release_spinlock(&AllShares.shareslock);
 
 	if(framestorge==NULL)
 	    return NULL;
@@ -92,9 +92,9 @@ struct Share* create_share(int32 ownerID, char* shareName, uint32 size, uint8 is
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
 	//panic("create_share is not implemented yet");
 	//Your Code is Here...
-	acquire_spinlock(&AllShares.shareslock);
+	//acquire_spinlock(&AllShares.shareslock);
     struct Share * share = (struct Share *)kmalloc(sizeof(struct Share));
-	release_spinlock(&AllShares.shareslock);
+	//release_spinlock(&AllShares.shareslock);
 
 	if(share == NULL)
 	 return NULL;

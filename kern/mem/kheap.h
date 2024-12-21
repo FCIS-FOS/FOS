@@ -34,7 +34,7 @@ static inline uint8 isKHeapPlacementStrategyWORSTFIT(){if(_KHeapPlacementStrateg
 void* kmalloc(unsigned int size);
 void kfree(void* virtual_address);
 void *krealloc(void *virtual_address, unsigned int new_size);
-
+struct spinlock k_lock;
 unsigned int kheap_virtual_address(unsigned int physical_address);
 unsigned int kheap_physical_address(unsigned int virtual_address);
 
