@@ -274,7 +274,7 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 		LIST_INSERT_TAIL(&(faulted_env->page_WS_list),new_element);
 		faulted_env->page_last_WS_element = NULL;
 		if(LIST_SIZE(&(faulted_env->page_WS_list)) == faulted_env->page_WS_max_size){
-			faulted_env->page_last_WS_element->prev_next_info.le_next= LIST_FIRST(&faulted_env->page_WS_list);
+			//faulted_env->page_last_WS_element->prev_next_info.le_next= LIST_FIRST(&faulted_env->page_WS_list);
 			faulted_env->page_last_WS_element = faulted_env->page_WS_list.lh_first;
 		}
 		
@@ -335,7 +335,6 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 					break;
 				}
 				iterator->sweeps_counter+=1;
-				
 				iterator=LIST_NEXT(iterator);
 				if(iterator==NULL)
 					iterator=LIST_FIRST(&faulted_env->page_WS_list);
@@ -350,7 +349,6 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 				if((pt_get_page_permissions(faulted_env->env_page_directory,iterator->virtual_address)&PERM_USED)==PERM_USED){
 					iterator->sweeps_counter=0;
 					pt_set_page_permissions(faulted_env->env_page_directory,iterator->virtual_address,0,PERM_USED);
-				
 					iterator=LIST_NEXT(iterator);
 					if(iterator==NULL)
 						iterator=LIST_FIRST(&faulted_env->page_WS_list);
@@ -362,7 +360,7 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 					new_element->virtual_address=fault_va;
 					new_element->sweeps_counter=0;
 					new_element->in_which_list=IN_PAGE_WS_LIST;
-					
+
 					struct FrameInfo *ptr_frame_info;
 				
 					allocate_frame(&ptr_frame_info);
@@ -390,6 +388,7 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 					new_element->virtual_address=fault_va;
 					new_element->sweeps_counter=0;
 					new_element->in_which_list=IN_PAGE_WS_LIST;
+					
 					struct FrameInfo *ptr_frame_info;
 					
 					allocate_frame(&ptr_frame_info);

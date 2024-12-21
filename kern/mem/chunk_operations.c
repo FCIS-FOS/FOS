@@ -291,16 +291,27 @@ void free_user_mem(struct Env* e, uint32 virtual_address, uint32 size)
     // panic("free_user_mem() is not implemented yet...!!");
     uint32 va_page_start=ROUNDDOWN(virtual_address,PAGE_SIZE);
     uint32 num_of_pages= ROUNDUP(size,PAGE_SIZE)/PAGE_SIZE;
+    if(e->page_last_WS_element!= NULL && ROUNDDOWN(e->page_last_WS_element->virtual_address,PAGE_SIZE)==ROUNDDOWN(virtual_address,PAGE_SIZE)){
+        //cprintf("test 1\n");
+        e->page_last_WS_element=LIST_NEXT(e->page_last_WS_element);
+        if(e->page_last_WS_element==NULL)
+         e->page_last_WS_element=LIST_FIRST(&(e->page_WS_list));
+    }
     for(uint32 current_page=va_page_start;current_page<va_page_start+(num_of_pages*PAGE_SIZE);current_page+=PAGE_SIZE){
         //unmark the page
         pt_set_page_permissions(e->env_page_directory,current_page,0,PERM_MARKED);
         //free the page from the page file
         pf_remove_env_page(e,current_page);
         //remove the page from the working set list
-        env_page_ws_invalidate_very_fast_boi(e,current_page);
+        env_page_ws_invalidate(e,current_page);
+    }
+    for(struct WorkingSetElement *ptr =LIST_FIRST(&(e->page_WS_list));ptr!=e->page_last_WS_element;ptr=LIST_NEXT(ptr)){
+        LIST_REMOVE(&(e->page_WS_list),ptr);
+        LIST_INSERT_TAIL(&(e->page_WS_list),ptr);
     }
     //TODO: [PROJECT'24.MS2 - BONUS#3] [3] USER HEAP [KERNEL SIDE] - O(1) free_user_mem
 }
+
 
 //=====================================
 // 2) FREE USER MEMORY (BUFFERING):
