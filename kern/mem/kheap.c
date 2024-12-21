@@ -39,7 +39,7 @@ int initialize_kheap_dynamic_allocator(uint32 daStart, uint32 initSizeToAllocate
 		va+=PAGE_SIZE;
 	}
 	initialize_dynamic_allocator(daStart,initSizeToAllocate);
-
+	
 
 	//initilize page table entires
 	for(uint32 curPage = limit + PAGE_SIZE; curPage < KERNEL_HEAP_MAX; curPage+=PAGE_SIZE){
@@ -52,6 +52,7 @@ int initialize_kheap_dynamic_allocator(uint32 daStart, uint32 initSizeToAllocate
 	allPages[0].num_of_pages=(KERNEL_HEAP_MAX-ACTUAL_START)/PAGE_SIZE;
 	allPages[0].next_index=-1;
 	start_ind=0;
+	init_spinlock(&k_lock,"kernel_lock");
 	return 0;
 }
 
@@ -102,6 +103,7 @@ void* sbrk(int numOfPages)
 	for(uint32 va = old_brk; va < new_brk; va += PAGE_SIZE)
 	{
 		struct FrameInfo* ptr_frame_info;
+		//acquire_spinlock(&k_lock);
 		int ret = allocate_frame(&ptr_frame_info);
 
 		
@@ -127,6 +129,7 @@ void* sbrk(int numOfPages)
 
 			return (void*)-1;
 		}
+		//release_spinlock(&k_lock);
 	}
 
 	// setting the new end block 
@@ -169,7 +172,10 @@ void* kmalloc(unsigned int size)
 
 
 	if(size <= DYN_ALLOC_MAX_BLOCK_SIZE){
-		return alloc_block_FF(size);
+		acquire_spinlock(&k_lock);
+		void *ret=alloc_block_FF(size);
+		release_spinlock(&k_lock);
+		return ret;	
 	}
 
 	// uint32 requiredPages = (size+PAGE_SIZE-1)/PAGE_SIZE;
@@ -178,8 +184,10 @@ void* kmalloc(unsigned int size)
 	uint32 pages = 0;
 	uint32 allocStart = HARD_LIMIT + PAGE_SIZE;
 	uint32 prev=0;
+	acquire_spinlock(&k_lock);
 	for(uint32 i=start_ind; i!=-1;i=allPages[i].next_index)
 	{
+		
 		//num>required ---> split
 		if(allPages[i].num_of_pages>requiredPages){
 			//move start index
@@ -215,13 +223,16 @@ void* kmalloc(unsigned int size)
 			break;
 		}
 		prev=i;
+		
 	}
-
+	release_spinlock(&k_lock);
 	if(pages!=requiredPages){
 		return NULL;
 	}else{
 		uint32 addr = allocStart;
+		
 		for(int i = 0; i<requiredPages; i++){
+			acquire_spinlock(&k_lock);
 			struct FrameInfo *frame;
 			int allocRet = allocate_frame(&frame);
 			if(allocRet == E_NO_MEM){
@@ -240,7 +251,9 @@ void* kmalloc(unsigned int size)
 			frame->mappedVA=addr;
       
 			addr += PAGE_SIZE;
+			release_spinlock(&k_lock);
 		}
+	
 	}
 
 	return (void*)allocStart;
@@ -259,10 +272,13 @@ void kfree(void* virtual_address)
 	uint32 virtual_address_int=(uint32)virtual_address;
 	//Virtual Address is in Block Allocator Range
     if(virtual_address_int>=start && virtual_address_int<limit){
+		acquire_spinlock(&k_lock);
         free_block(virtual_address);
+		release_spinlock(&k_lock);
     }
 	//Virtual Address is in Page Allocator Range
     else if (virtual_address_int>=limit+PAGE_SIZE && virtual_address_int<KERNEL_HEAP_MAX){
+		acquire_spinlock(&k_lock);
         uint32 * ptr_page_table=NULL;
 
         struct FrameInfo *frame_info = get_frame_info(ptr_page_directory,virtual_address_int,&ptr_page_table);
@@ -290,10 +306,11 @@ void kfree(void* virtual_address)
 				allPages[as_ind].next_index=allPages[start_ind].next_index;
 			}
 			start_ind=as_ind;
-			
+		//release_spinlock(k_lock);
 		}
 		else{
 			// loop until free address >current block and next of current block is after free address
+			//acquire_spinlock(k_lock);
 			for(uint32 i = start_ind;i!=-1;i=allPages[i].next_index){
 				//free address >current block and next of current block is after free address
 				if(as_ind>i && as_ind<allPages[i].next_index){
@@ -336,6 +353,7 @@ void kfree(void* virtual_address)
 				}
 			}
 		}
+		release_spinlock(&k_lock);
     }
   
 	//Virtual Address is invalid
