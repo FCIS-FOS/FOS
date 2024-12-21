@@ -155,7 +155,7 @@ void* sys_sbrk(int numOfPages)
 	uint32 env_new_brk = env->uheap_brk + increment;
 
 	// env's new break exceed the hard limit or the free frames is depleted
-	if(env_new_brk > env->uheap_limit || numOfPages > LIST_SIZE(&MemFrameLists.free_frame_list))
+	if(env_new_brk > env->uheap_limit)
 	{
 		return (void*)-1;
 	}
@@ -164,19 +164,9 @@ void* sys_sbrk(int numOfPages)
 
 	// setting current endblock to zero
 	uint32* old_endBlock = (uint32*)(env_old_brk - sizeof(int));
-	// *old_endBlock = 0;
-
+	if((uint32)old_endBlock>=USER_HEAP_START)
+		*old_endBlock = 0;
 	// marking every page for future usage (no allocation done)
-	// for(uint32 va = env_old_brk; va < env_new_brk; va += PAGE_SIZE)
-	// {
-	// 	uint32 *ptr_page_table=NULL;
-	// 	if(get_page_table(env->env_page_directory,va,&ptr_page_table)==TABLE_NOT_EXIST){
-	// 		ptr_page_table=create_page_table(env->env_page_directory,va);
-		
-	// 	}
-	
-	// 	pt_set_page_permissions(env->env_page_directory, va, PERM_MARKED, 0);
-	// }
 	allocate_user_mem(env,env_old_brk,env_new_brk-env_old_brk);
 
 	// setting the new end block 
