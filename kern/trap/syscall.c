@@ -400,6 +400,7 @@ struct Env* sys_dequeue(struct Env_Queue* queue)
 {
 	acquire_spinlock(&ProcessQueues.qlock);
 	struct Env * deq_env= dequeue(queue);
+	sched_insert_ready(deq_env);
 	release_spinlock(&ProcessQueues.qlock);
 
 	return deq_env;

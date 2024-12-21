@@ -89,7 +89,7 @@ void signal_semaphore(struct semaphore sem)
 		
 		struct Env* e = sys_dequeue(&sem.semdata->queue);
 
-		sys_enqueue(&sem.semdata->queue,e, 1,&sem.semdata->lock);
+		// sys_enqueue(&sem.semdata->queue,e, 1,&sem.semdata->lock);
 	}
 	sem.semdata->lock = 0;
 

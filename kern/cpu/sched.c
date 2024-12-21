@@ -386,7 +386,8 @@ struct Env* fos_scheduler_PRIRR()
 		}
 	}
 	kclock_set_quantum(quantums[0]);
-	// cprintf("next env %p \n",nextEnv);
+	// if(nextEnv)
+	// 	cprintf("next env id %d \n",nextEnv->env_id);
 
 	return nextEnv;
 
