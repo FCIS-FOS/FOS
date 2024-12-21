@@ -79,7 +79,7 @@ struct Command commands[] =
 		//********************************//
 		{ "rub", "reads block of bytes from specific location in given environment" ,command_readuserblock, 3},
 		//TODO: [PROJECT'24.MS3 - #07] [3] PRIORITY RR Scheduler - initialize command
-
+		{"schedPRIRR","Switch & initialize the scheduler to PRIORITY RR with given #priorities, quantum and starvation threshold",command_sch_PRIRR,3},
 		//**************************************//
 		/* COMMANDS WITH AT LEAST ONE ARGUMENT */
 		//**************************************//
@@ -602,6 +602,17 @@ int command_set_page_rep_ModifiedCLOCK(int number_of_arguments, char **arguments
 }
 
 /*2018*///BEGIN======================================================
+int command_sch_PRIRR(int number_of_arguments, char **arguments)
+{
+	uint32 numOfPriority = strtol(arguments[1], NULL, 10);
+	uint8 quantum = strtol(arguments[2], NULL, 10);
+	uint32 starvationThresh = strtol(arguments[3], NULL, 10);
+
+	sched_init_PRIRR(numOfPriority,quantum,starvationThresh);
+	cprintf("Scheduler is now set to Priority Round Robin with number of priorities %d , quantum %d ms and starvation thershold %d \n",
+		 numOfPriority,quantums[0],starvationThresh);
+	return 0;
+}
 int command_sch_RR(int number_of_arguments, char **arguments)
 {
 	uint8 quantum = strtol(arguments[1], NULL, 10);

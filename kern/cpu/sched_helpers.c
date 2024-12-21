@@ -155,6 +155,7 @@ void sched_insert_ready(struct Env* env)
 	{
 		//cprintf("\nInserting %d into ready queue 0\n", env->env_id);
 		env->env_status = ENV_READY ;
+		env->time_added_in_ready_queue=timer_ticks();
 		enqueue(&(ProcessQueues.env_ready_queues[env->priority]), env);
 	}
 }
@@ -705,11 +706,23 @@ void env_set_priority(int envID, int priority)
 
 	//Get the process of the given ID
 	struct Env* proc ;
-	envid2env(envID, &proc, 0);
+	int status = envid2env(envID, &proc, 0);
+
+	if(status == E_BAD_ENV){
+		panic("BAD ENV");
+	}
 
 	//Your code is here
 	//Comment the following line
-	panic("Not implemented yet");
+	// panic("Not implemented yet");
+	acquire_spinlock(&(ProcessQueues.qlock));
+	proc->priority = priority;
+	if(proc->env_status == ENV_READY){
+		//in one of the ready q
+		sched_remove_ready(proc);
+		sched_insert_ready(proc);
+	}
+	release_spinlock(&(ProcessQueues.qlock));
 }
 
 void sched_set_starv_thresh(uint32 starvThresh)
@@ -717,5 +730,6 @@ void sched_set_starv_thresh(uint32 starvThresh)
 	//TODO: [PROJECT'24.MS3 - #06] [3] PRIORITY RR Scheduler - sched_set_starv_thresh
 	//Your code is here
 	//Comment the following line
-	panic("Not implemented yet");
+	// panic("Not implemented yet");
+	starvation_Threshold = starvThresh;
 }

@@ -301,7 +301,7 @@ void* sys_sbrk(int increment)
 	//Comment the following line before start coding...
 	// panic("not implemented yet");
 	return (uint32*)syscall(SYS_sbrk, (uint32)increment, 0, 0, 0, 0);
-	
+
 }
 
 void sys_free_user_mem(uint32 virtual_address, uint32 size)
@@ -311,10 +311,30 @@ void sys_free_user_mem(uint32 virtual_address, uint32 size)
 	syscall(SYS_free_user_mem, virtual_address, size, 0, 0, 0);
 }
 
+
 void sys_allocate_user_mem(uint32 virtual_address, uint32 size)
 {
+
 	//Comment the following line before start coding...
 	//panic("not implemented yet");
 	syscall(SYS_allocate_user_mem, virtual_address, size, 0, 0, 0);
+}
+void sys_init_queue(struct Env_Queue* queue){
+syscall(SYS_init_queue, (uint32)queue, 0, 0, 0, 0);
+}
+
+void sys_env_set_priority(int envID, int priority){
+	syscall(SYS_ENV_SET_PRIORITY, envID, priority, 0 ,0 ,0);
+}
+
+
+struct Env* sys_enqueue(struct Env_Queue* queue, struct Env* e, uint32 insert_ready,uint32 *lock)
+{
+	return (struct Env*)syscall(SYS_enqueue, (uint32)queue, (uint32)e, insert_ready, (uint32)lock, 0);
+}
+
+struct Env* sys_dequeue(struct Env_Queue* queue)
+{
+	return (struct Env*)syscall(SYS_dequeue, (uint32)queue, 0, 0, 0, 0);
 }
 

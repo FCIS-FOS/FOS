@@ -52,8 +52,16 @@ enum
 	SYS_sbrk,
 	SYS_free_user_mem,
 	SYS_allocate_user_mem,
+	SYS_init_queue,
+	SYS_enqueue,
+	SYS_dequeue,
+	
+
+
 	//=====================================================================
-	NSYSCALLS
+	NSYSCALLS,
+	//MS3 sys call
+	SYS_ENV_SET_PRIORITY
 };
 
 #endif /* !FOS_INC_SYSCALL_H */
