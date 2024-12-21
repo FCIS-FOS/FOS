@@ -272,11 +272,13 @@ void kfree(void* virtual_address)
 	uint32 virtual_address_int=(uint32)virtual_address;
 	//Virtual Address is in Block Allocator Range
     if(virtual_address_int>=start && virtual_address_int<limit){
+		acquire_spinlock(&k_lock);
         free_block(virtual_address);
+		release_spinlock(&k_lock);
     }
 	//Virtual Address is in Page Allocator Range
     else if (virtual_address_int>=limit+PAGE_SIZE && virtual_address_int<KERNEL_HEAP_MAX){
-		//acquire_spinlock(k_lock);
+		acquire_spinlock(&k_lock);
         uint32 * ptr_page_table=NULL;
 
         struct FrameInfo *frame_info = get_frame_info(ptr_page_directory,virtual_address_int,&ptr_page_table);
@@ -350,8 +352,8 @@ void kfree(void* virtual_address)
 					break;
 				}
 			}
-			//release_spinlock(k_lock);
 		}
+		release_spinlock(&k_lock);
     }
   
 	//Virtual Address is invalid

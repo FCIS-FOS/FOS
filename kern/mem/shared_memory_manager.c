@@ -110,9 +110,7 @@ struct Share* create_share(int32 ownerID, char* shareName, uint32 size, uint8 is
 	int numOfFrames =(ROUNDUP(size,PAGE_SIZE)/PAGE_SIZE);
 	share->framesStorage=create_frames_storage(numOfFrames);
     if(share->framesStorage==NULL){
-		acquire_spinlock(&AllShares.shareslock);
 		kfree(share);
-		release_spinlock(&AllShares.shareslock);
 		return NULL;
 	}
     return share;
